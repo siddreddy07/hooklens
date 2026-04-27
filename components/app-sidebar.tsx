@@ -3,10 +3,10 @@
 import { useState, useEffect } from 'react'
 import Link from 'next/link'
 import { usePathname, useRouter } from 'next/navigation'
-import { cn } from '@/lib/utils'
 import { createClient } from '@/lib/supabase/client'
+import { cn } from '@/lib/utils'
 import { Button } from '@/components/ui/button'
-import type { User } from '@supabase/supabase-js'
+import { HookLensLogo } from '@/components/logo'
 import { 
   LayoutDashboard, 
   Webhook, 
@@ -14,16 +14,16 @@ import {
   LogOut,
   Menu,
   X,
-  Zap,
   BookOpen,
   FolderKanban,
   Key
 } from 'lucide-react'
 import { motion, AnimatePresence } from 'framer-motion'
+import { RiApps2AiLine } from 'react-icons/ri'
 
 const navItems = [
   { href: '/dashboard', label: 'Dashboard', icon: LayoutDashboard },
-  { href: '/providers', label: 'Providers', icon: Webhook },
+  { href: '/providers', label: 'Providers', icon: RiApps2AiLine },
   { href: '/projects', label: 'Projects', icon: FolderKanban },
   { href: '/api-keys', label: 'API Keys', icon: Key },
   { href: '/docs', label: 'Documentation', icon: BookOpen },
@@ -34,18 +34,22 @@ export function AppSidebar() {
   const pathname = usePathname()
   const router = useRouter()
   const [mobileOpen, setMobileOpen] = useState(false)
-  const [user, setUser] = useState<User | null>(null)
+  const [user, setUser] = useState<{ email: string } | null>(null)
+  const [mounted, setMounted] = useState(false)
   
   useEffect(() => {
+    setMounted(true)
     setMobileOpen(false)
+    
+    async function fetchUser() {
+      const supabase = createClient()
+      const { data: { user } } = await supabase.auth.getUser()
+      if (user) {
+        setUser({ email: user.email || '' })
+      }
+    }
+    fetchUser()
   }, [pathname])
-  
-  useEffect(() => {
-    const supabase = createClient()
-    supabase.auth.getUser().then(({ data: { user } }) => {
-      setUser(user)
-    })
-  }, [])
   
   const handleLogout = async () => {
     const supabase = createClient()
@@ -54,18 +58,19 @@ export function AppSidebar() {
     router.refresh()
   }
   
-  const userInitial = user?.email?.charAt(0).toUpperCase() || 'U'
-  const userEmail = user?.email || 'Loading...'
-  const userName = user?.user_metadata?.full_name || user?.email?.split('@')[0] || 'User'
+  const userEmail = user?.email || ''
+  const userName = userEmail.split('@')[0] || ''
+  const userInitial = userName.charAt(0).toUpperCase() || 'U'
   
   const sidebarContent = (
     <div className="flex h-full flex-col">
       {/* Logo */}
       <Link href="/" className="flex h-16 items-center gap-2 border-b border-border px-6 transition-opacity hover:opacity-80">
-        <div className="flex size-8 items-center justify-center rounded-lg bg-primary">
-          <Zap size={18} className="text-primary-foreground" />
-        </div>
-        <span className="text-lg font-semibold">HookLens</span>
+        <HookLensLogo />
+        <span className="font-mono text-lg font-bold tracking-tight">
+          <span className="text-foreground">hook</span>
+          <span className="text-primary">lens</span>
+        </span>
       </Link>
       
       {/* Navigation */}
@@ -93,13 +98,25 @@ export function AppSidebar() {
       {/* User section */}
       <div className="border-t border-border p-4">
         <div className="mb-3 flex items-center gap-3">
-          <div className="flex size-9 items-center justify-center rounded-full bg-primary text-sm font-semibold text-primary-foreground">
-            {userInitial}
-          </div>
-          <div className="flex-1 truncate">
-            <p className="truncate text-sm font-medium">{userName}</p>
-            <p className="truncate text-xs text-muted-foreground">{userEmail}</p>
-          </div>
+          {mounted && user ? (
+            <>
+              <div className="flex size-9 items-center justify-center rounded-full bg-primary text-sm font-semibold text-primary-foreground">
+                {userInitial}
+              </div>
+              <div className="flex-1 truncate">
+                <p className="truncate text-sm font-medium">{userName}</p>
+                <p className="truncate text-xs text-muted-foreground">{userEmail}</p>
+              </div>
+            </>
+          ) : (
+            <>
+              <div className="size-9 animate-pulse rounded-full bg-muted" />
+              <div className="flex-1 space-y-1.5">
+                <div className="h-3.5 w-16 animate-pulse rounded bg-muted" />
+                <div className="h-3 w-24 animate-pulse rounded bg-muted" />
+              </div>
+            </>
+          )}
         </div>
         <Button
           variant="ghost"
@@ -124,10 +141,11 @@ export function AppSidebar() {
       {/* Mobile Header */}
       <header className="fixed left-0 right-0 top-0 z-50 flex h-14 items-center justify-between border-b border-border bg-card px-4 lg:hidden">
         <Link href="/" className="flex items-center gap-2 transition-opacity hover:opacity-80">
-          <div className="flex size-8 items-center justify-center rounded-lg bg-primary">
-            <Zap size={18} className="text-primary-foreground" />
-          </div>
-          <span className="text-lg font-semibold">HookLens</span>
+          <HookLensLogo />
+          <span className="font-mono text-lg font-bold tracking-tight">
+            <span className="text-foreground">Hook</span>
+            <span className="text-primary">Lens</span>
+          </span>
         </Link>
         <Button
           variant="ghost"

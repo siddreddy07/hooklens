@@ -5,10 +5,11 @@ import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { motion } from 'framer-motion'
 import { createClient } from '@/lib/supabase/client'
+import { hooklensLogo } from '@/components/logo'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
-import { Zap, Mail, Lock, ArrowRight, Loader2 } from 'lucide-react'
+import { Mail, Lock, ArrowRight, Loader2 } from 'lucide-react'
 
 export default function LoginPage() {
   const router = useRouter()
@@ -31,7 +32,7 @@ export default function LoginPage() {
           email,
           password,
           options: {
-            emailRedirectTo: process.env.NEXT_PUBLIC_DEV_SUPABASE_REDIRECT_URL ?? 
+            emailRedirectTo: process.env.NEXT_PUBLIC_SUPABASE_REDIRECT_URL ?? 
               `${window.location.origin}/auth/callback`,
           },
         })
@@ -70,17 +71,15 @@ export default function LoginPage() {
         {/* Logo and title */}
         <div className="mb-8 text-center">
           <Link href="/" className="mb-4 inline-flex items-center justify-center">
-            <div className="flex size-12 items-center justify-center rounded-xl bg-primary">
-              <Zap size={24} className="text-primary-foreground" />
-            </div>
+            <hooklensLogo className="size-12" />
           </Link>
-          <h1 className="mt-4 text-2xl font-bold">
+          <h1 className="mt-4 font-mono text-2xl font-bold">
             {isSignUp ? 'Create your account' : 'Welcome back'}
           </h1>
           <p className="mt-2 text-sm text-muted-foreground">
             {isSignUp 
               ? 'Start debugging webhooks with AI' 
-              : 'Sign in to your HookLens account'}
+              : 'Sign in to your hooklens account'}
           </p>
         </div>
 

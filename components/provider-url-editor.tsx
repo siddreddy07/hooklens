@@ -7,6 +7,7 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Check, Pencil, AlertCircle } from 'lucide-react'
 import { cn } from '@/lib/utils'
+import { Spinner } from '@/components/ui/spinner'
 
 interface ProviderUrlEditorProps {
   provider: Provider
@@ -19,11 +20,17 @@ export function ProviderUrlEditor({ provider, onUrlChange, className }: Provider
   const [isEditing, setIsEditing] = useState(false)
   const [editValue, setEditValue] = useState('')
   const [saved, setSaved] = useState(false)
+  const [loading, setLoading] = useState(true)
+  const [saving, setSaving] = useState(false)
   
   useEffect(() => {
-    const storedUrl = getProviderUrl(provider)
-    setUrl(storedUrl)
-    setEditValue(storedUrl)
+    const loadUrl = async () => {
+      const storedUrl = await getProviderUrl(provider)
+      setUrl(storedUrl)
+      setEditValue(storedUrl)
+      setLoading(false)
+    }
+    loadUrl()
   }, [provider])
   
   const handleEdit = () => {
@@ -31,12 +38,14 @@ export function ProviderUrlEditor({ provider, onUrlChange, className }: Provider
     setEditValue(url)
   }
   
-  const handleSave = () => {
-    setProviderUrl(provider, editValue)
+  const handleSave = async () => {
+    setSaving(true)
+    await setProviderUrl(provider, editValue)
     setUrl(editValue)
     setIsEditing(false)
     setSaved(true)
     onUrlChange?.(editValue)
+    setSaving(false)
     setTimeout(() => setSaved(false), 1500)
   }
   
@@ -47,6 +56,16 @@ export function ProviderUrlEditor({ provider, onUrlChange, className }: Provider
   
   const providerName = getProviderDisplayName(provider)
   const hasUrl = url.length > 0
+  
+  if (loading) {
+    return (
+      <div className={cn('rounded-lg border border-border bg-card p-4', className)}>
+        <div className="flex items-center justify-center py-4">
+          <Spinner size="sm" />
+        </div>
+      </div>
+    )
+  }
   
   return (
     <div className={cn('rounded-lg border border-border bg-card p-4', className)}>
@@ -72,8 +91,8 @@ export function ProviderUrlEditor({ provider, onUrlChange, className }: Provider
             className="flex-1 bg-background font-mono text-sm"
             autoFocus
           />
-          <Button size="sm" onClick={handleSave}>
-            Save
+          <Button size="sm" onClick={handleSave} disabled={saving}>
+            {saving ? <Spinner size="sm" /> : 'Save'}
           </Button>
           <Button size="sm" variant="ghost" onClick={handleCancel}>
             Cancel

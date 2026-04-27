@@ -161,7 +161,7 @@ export default function ApiKeysPage() {
         <div className="mb-8">
           <h1 className="text-2xl font-semibold">API Keys</h1>
           <p className="mt-1 text-muted-foreground">
-            Manage your API key for the HookLens middleware
+            Manage your API key for the hooklens middleware
           </p>
         </div>
 
@@ -172,7 +172,7 @@ export default function ApiKeysPage() {
             <div className="text-sm">
               <p className="font-medium text-primary">Keep your API key secure</p>
               <p className="mt-1 text-muted-foreground">
-                Your API key grants access to send webhook events to your HookLens dashboard. 
+                Your API key grants access to send webhook events to your hooklens dashboard. 
                 Never share it publicly or commit it to version control.
               </p>
             </div>
@@ -312,7 +312,7 @@ export default function ApiKeysPage() {
               <code>
                 <span className="text-gray-500"># Add to your .env file</span>
                 {'\n'}
-                <span className="text-blue-400">HOOK_LENS_API_KEY</span>
+                <span className="text-blue-400">HOOKLENS_API_KEY</span>
                 <span className="text-gray-400">=</span>
                 <span className="text-emerald-400">{apiKey?.api_key || 'hlk_your_api_key_here'}</span>
               </code>

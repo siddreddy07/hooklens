@@ -4,7 +4,7 @@ import { useState, useEffect, use } from 'react'
 import Link from 'next/link'
 import { notFound } from 'next/navigation'
 import { motion } from 'framer-motion'
-import { getEventById, type WebhookEvent, type EventStatus } from '@/lib/mock-data'
+import { createClient } from '@/lib/supabase/client'
 import { getProviderUrl, setProviderUrl, getProviderDisplayName } from '@/lib/provider-urls'
 import { StatusBadge } from '@/components/status-badge'
 import { ProviderBadge } from '@/components/provider-badge'
@@ -46,6 +46,7 @@ import {
   BreadcrumbPage,
   BreadcrumbSeparator,
 } from '@/components/ui/breadcrumb'
+import { EventChatbot } from '@/components/event-chatbot'
 
 type ReplayResult = {
   status: 'success' | 'error' | 'network_error'
@@ -55,8 +56,27 @@ type ReplayResult = {
   timestamp: Date
 } | null
 
+type EventStatus = 'success' | 'failed' | 'replayed'
+
+type WebhookEvent = {
+  id: number | string
+  provider: string
+  event_type: string
+  method: string
+  url: string
+  headers: Record<string, string>
+  body: Record<string, unknown> | null
+  raw_body: string | null
+  status: string
+  created_at: string
+  replay_count: number
+  ai_summary: string | null
+}
+
 export default function EventDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const resolvedParams = use(params)
+  const supabase = createClient()
+  const [userId, setUserId] = useState<string | null>(null)
   const [event, setEvent] = useState<WebhookEvent | null>(null)
   const [providerUrl, setProviderUrlState] = useState('')
   const [isEditingUrl, setIsEditingUrl] = useState(false)
@@ -71,17 +91,32 @@ export default function EventDetailPage({ params }: { params: Promise<{ id: stri
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
-    const foundEvent = getEventById(resolvedParams.id)
-    if (foundEvent) {
-      setEvent(foundEvent)
-      setEventStatus(foundEvent.status)
-      setReplayCount(foundEvent.replay_count)
-      const url = getProviderUrl(foundEvent.provider)
+    const fetchUserAndEvent = async () => {
+      const { data: { user } } = await supabase.auth.getUser()
+      if (user) setUserId(user.id)
+
+      const { data, error } = await supabase
+        .from('webhook_events')
+        .select('*')
+        .eq('id', resolvedParams.id)
+        .single()
+
+      if (error || !data) {
+        setLoading(false)
+        return
+      }
+
+      setEvent(data as WebhookEvent)
+      setEventStatus(data.status === 'failed' ? 'failed' : 'success')
+      setReplayCount(data.replay_count || 0)
+      const url = await getProviderUrl(data.provider)
       setProviderUrlState(url)
       setEditUrlValue(url)
+      setLoading(false)
     }
-    setLoading(false)
-  }, [resolvedParams.id])
+
+    fetchUserAndEvent()
+  }, [resolvedParams.id, supabase])
 
   if (loading) {
     return (
@@ -106,8 +141,8 @@ export default function EventDetailPage({ params }: { params: Promise<{ id: stri
     setEditUrlValue(providerUrl)
   }
 
-  const handleSaveUrl = () => {
-    setProviderUrl(event.provider, editUrlValue)
+  const handleSaveUrl = async () => {
+    await setProviderUrl(event.provider, editUrlValue)
     setProviderUrlState(editUrlValue)
     setIsEditingUrl(false)
     setUrlSaved(true)
@@ -126,15 +161,44 @@ export default function EventDetailPage({ params }: { params: Promise<{ id: stri
     setReplayResult(null)
 
     const startTime = Date.now()
+    const newReplayCount = replayCount + 1
+
+    // Build clean headers - only keep essential headers from the original webhook
+    const cleanHeaders: Record<string, string> = {
+      'Content-Type': 'application/json',
+      'X-HookLens-Replay': 'true',
+      'X-HookLens-Event-ID': String(event.id),
+    }
+
+    // Add essential headers from stored event (skip problematic ones)
+    const skipHeaders = [
+      'content-type',
+      'content-length',
+      'host',
+      'accept',
+      'accept-encoding',
+      'accept-language',
+      'connection',
+      'keep-alive',
+      'sec-fetch-*',
+      'x-forwarded-*',
+    ]
+
+    Object.entries(event.headers).forEach(([key, value]) => {
+      const keyLower = key.toLowerCase()
+      const shouldSkip = skipHeaders.some(
+        (skip) => keyLower === skip || keyLower.startsWith(skip.replace('*', ''))
+      )
+      if (!shouldSkip && value) {
+        cleanHeaders[key] = value
+      }
+    })
 
     try {
       const response = await fetch(providerUrl, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          ...event.headers,
-        },
-        body: JSON.stringify(event.payload),
+        method: event.method || 'POST',
+        headers: cleanHeaders,
+        body: typeof event.body === 'string' ? event.body : JSON.stringify(event.body),
       })
 
       const duration = Date.now() - startTime
@@ -147,9 +211,14 @@ export default function EventDetailPage({ params }: { params: Promise<{ id: stri
           duration,
           timestamp: new Date(),
         })
-        // Update replay count and status
-        setReplayCount(prev => prev + 1)
+        setReplayCount(newReplayCount)
         setEventStatus('replayed')
+        
+        // Save to database
+        await supabase.from('webhook_events').update({
+          replay_count: newReplayCount,
+          replayed_at: new Date().toISOString(),
+        }).eq('id', event.id)
       } else {
         setReplayResult({
           status: 'error',
@@ -158,9 +227,14 @@ export default function EventDetailPage({ params }: { params: Promise<{ id: stri
           duration,
           timestamp: new Date(),
         })
-        // Still increment replay count even on failure
-        setReplayCount(prev => prev + 1)
+        setReplayCount(newReplayCount)
         setEventStatus('replayed')
+        
+        // Save to database
+        await supabase.from('webhook_events').update({
+          replay_count: newReplayCount,
+          replayed_at: new Date().toISOString(),
+        }).eq('id', event.id)
       }
     } catch {
       const duration = Date.now() - startTime
@@ -170,9 +244,14 @@ export default function EventDetailPage({ params }: { params: Promise<{ id: stri
         duration,
         timestamp: new Date(),
       })
-      // Still increment replay count even on network error
-      setReplayCount(prev => prev + 1)
+      setReplayCount(newReplayCount)
       setEventStatus('replayed')
+      
+      // Save to database even on network error
+      await supabase.from('webhook_events').update({
+        replay_count: newReplayCount,
+        replayed_at: new Date().toISOString(),
+      }).eq('id', event.id)
     } finally {
       setIsReplaying(false)
     }
@@ -414,7 +493,7 @@ export default function EventDetailPage({ params }: { params: Promise<{ id: stri
           {/* Section 5: JSON Payload */}
           <section className="rounded-lg border border-border bg-card p-6">
             <h2 className="mb-4 font-medium">JSON Payload</h2>
-            <JsonViewer data={event.payload} />
+            <JsonViewer data={event.body} />
           </section>
 
           {/* Section 6: Request Headers */}
@@ -449,6 +528,8 @@ export default function EventDetailPage({ params }: { params: Promise<{ id: stri
             </section>
           </Collapsible>
         </div>
+        
+        <EventChatbot event={event} userId={userId || ''} />
       </motion.div>
     </div>
   )

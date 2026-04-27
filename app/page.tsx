@@ -1,507 +1,1287 @@
 'use client'
 
 import Link from 'next/link'
-import { motion, useScroll, useTransform } from 'framer-motion'
+import { useRouter } from 'next/navigation'
+import { motion, useScroll, useTransform, AnimatePresence } from 'framer-motion'
 import { Button } from '@/components/ui/button'
-import { 
-  Zap, 
-  Search, 
-  RotateCcw, 
-  ArrowRight, 
-  Terminal, 
-  Shield, 
-  Clock, 
+import {
+  Zap,
+  RotateCcw,
+  ArrowRight,
+  Shield,
+  Clock,
   Sparkles,
   Code2,
   Webhook,
-  ChevronRight,
   BookOpen,
-  Github
+  Github,
+  Terminal,
+  ChevronRight,
+  Activity,
+  Search,
+  LayoutDashboard,
 } from 'lucide-react'
 import { useRef, useState, useEffect } from 'react'
+import { createClient } from '@/lib/supabase/client'
+import { PiWebhooksLogoFill } from 'react-icons/pi'
+
+// ─── DATA ───────────────────────────────────────────────────────────────────
 
 const features = [
   {
     icon: Zap,
+    tag: '01',
     title: 'Instant Capture',
-    description: 'Intercept webhooks from Stripe, GitHub, Clerk, and 50+ providers in real-time with zero configuration.',
+    description:
+      'Intercept webhooks from Stripe, GitHub, Clerk, and 50+ providers in real-time with zero configuration.',
   },
   {
     icon: Sparkles,
+    tag: '02',
     title: 'AI-Powered Insights',
-    description: 'Understand complex webhook payloads instantly. Our AI explains what each event means in plain English.',
+    description:
+      'Understand complex webhook payloads instantly. Our AI explains what each event means in plain English.',
   },
   {
     icon: RotateCcw,
+    tag: '03',
     title: 'One-Click Replay',
-    description: 'Replay any webhook to your local or production backend. Debug faster than ever before.',
+    description:
+      'Replay any webhook to your local or production backend. Debug faster than ever before.',
   },
   {
     icon: Shield,
+    tag: '04',
     title: 'Secure by Default',
-    description: 'End-to-end encryption. Your webhook data never touches our servers unencrypted.',
+    description:
+      'End-to-end encryption. Your webhook data never touches our servers unencrypted.',
   },
   {
     icon: Clock,
+    tag: '05',
     title: 'Event History',
-    description: 'Full searchable history of all webhook events. Filter by provider, status, or time range.',
+    description:
+      'Full searchable history of all webhook events. Filter by provider, status, or time range.',
   },
   {
     icon: Code2,
+    tag: '06',
     title: 'Developer First',
-    description: 'Built by developers, for developers. Clean API, detailed logs, and excellent DX.',
+    description:
+      'Built by developers, for developers. Clean API, detailed logs, and excellent DX.',
   },
 ]
 
-const codeExample = `import { HookLens } from 'hooklens'
-
-const hooks = HookLens({
-  projectName: 'my-app',
-  provider: 'stripe'
-})
-
-app.use('/webhooks', hooks.capture())`
-
 const providers = [
-  'Stripe', 'GitHub', 'Clerk', 'Shopify', 'Twilio', 
-  'SendGrid', 'Slack', 'Discord', 'Linear', 'Vercel'
+  { name: 'Stripe', color: '#635bff' },
+  { name: 'GitHub', color: '#e6edf3' },
+  { name: 'Clerk', color: '#6c47ff' },
+  { name: 'Shopify', color: '#96bf48' },
+  { name: 'Twilio', color: '#f22f46' },
+  { name: 'SendGrid', color: '#1a82e2' },
+  { name: 'Slack', color: '#4a154b' },
+  { name: 'Discord', color: '#5865f2' },
+  { name: 'Linear', color: '#5e6ad2' },
+  { name: 'Vercel', color: '#e6edf3' },
 ]
 
+// ─── COMPONENTS ──────────────────────────────────────────────────────────────
+
+function GridBackground() {
+  return (
+    <div className="pointer-events-none absolute inset-0 overflow-hidden">
+      {/* Subtle dot grid */}
+      <div
+        className="absolute inset-0 opacity-[0.35]"
+        style={{
+          backgroundImage:
+            'radial-gradient(circle, rgba(0,255,133,0.25) 1px, transparent 1px)',
+          backgroundSize: '40px 40px',
+        }}
+      />
+      {/* Radial fade mask over dot grid */}
+      <div className="absolute inset-0 bg-[radial-gradient(ellipse_80%_60%_at_50%_0%,transparent_40%,#060709_100%)]" />
+      {/* Glow orbs */}
+      <div className="absolute left-1/4 top-0 h-[600px] w-[600px] -translate-x-1/2 rounded-full bg-[#00ff85] opacity-[0.04] blur-[120px]" />
+      <div className="absolute right-0 top-1/3 h-[500px] w-[500px] rounded-full bg-[#00e5ff] opacity-[0.03] blur-[100px]" />
+    </div>
+  )
+}
+
+// ─── PAGE ─────────────────────────────────────────────────────────────────────
+
 export default function LandingPage() {
+  const router = useRouter()
   const heroRef = useRef<HTMLDivElement>(null)
-  const footerRef = useRef<HTMLElement>(null)
-  const [showNav, setShowNav] = useState(true)
   const [hasScrolled, setHasScrolled] = useState(false)
-  
+  const [user, setUser] = useState<{ email: string } | null>(null)
+  const [mounted, setMounted] = useState(false)
+
   const { scrollYProgress } = useScroll({
     target: heroRef,
-    offset: ['start start', 'end start']
+    offset: ['start start', 'end start'],
   })
-  
-  const heroOpacity = useTransform(scrollYProgress, [0, 0.5], [1, 0])
-  const heroScale = useTransform(scrollYProgress, [0, 0.5], [1, 0.95])
-  const heroY = useTransform(scrollYProgress, [0, 0.5], [0, -50])
-  
-  // Track scroll position and footer visibility
+  const heroOpacity = useTransform(scrollYProgress, [0, 0.6], [1, 0])
+  const heroY = useTransform(scrollYProgress, [0, 0.6], [0, -60])
+
   useEffect(() => {
-    const handleScroll = () => {
-      setHasScrolled(window.scrollY > 50)
+    setMounted(true)
+    async function fetchUser() {
+      const supabase = createClient()
+      const { data: { user } } = await supabase.auth.getUser()
+      if (user) {
+        setUser({ email: user.email || '' })
+      }
     }
-    
-    window.addEventListener('scroll', handleScroll, { passive: true })
-    return () => window.removeEventListener('scroll', handleScroll)
+fetchUser()
   }, [])
-  
-  // Intersection observer for footer
+
   useEffect(() => {
-    const footer = footerRef.current
-    if (!footer) return
-    
-    const observer = new IntersectionObserver(
-      ([entry]) => {
-        // Hide nav when footer is visible, show when it's not
-        setShowNav(!entry.isIntersecting)
-      },
-      { threshold: 0.1 }
-    )
-    
-    observer.observe(footer)
-    return () => observer.disconnect()
+    const onScroll = () => setHasScrolled(window.scrollY > 40)
+    window.addEventListener('scroll', onScroll, { passive: true })
+    return () => window.removeEventListener('scroll', onScroll)
   }, [])
 
   return (
-    <div className="relative min-h-screen overflow-hidden bg-background">
-      {/* Animated grid background */}
-      <div className="pointer-events-none absolute inset-0 overflow-hidden">
-        <div className="absolute inset-0 bg-[linear-gradient(to_right,rgb(34_197_94/0.03)_1px,transparent_1px),linear-gradient(to_bottom,rgb(34_197_94/0.03)_1px,transparent_1px)] bg-[size:60px_60px]" />
-        <div className="absolute left-1/4 top-0 h-[500px] w-[500px] rounded-full bg-primary/5 blur-[120px]" />
-        <div className="absolute right-1/4 top-1/3 h-[400px] w-[400px] rounded-full bg-primary/8 blur-[100px]" />
-        <div className="absolute bottom-0 left-1/2 h-[300px] w-[600px] -translate-x-1/2 rounded-full bg-primary/5 blur-[100px]" />
-      </div>
-      
-      {/* Floating particles */}
-      <div className="pointer-events-none absolute inset-0 overflow-hidden">
-        {[...Array(20)].map((_, i) => (
-          <motion.div
-            key={i}
-            className="absolute size-1 rounded-full bg-primary/30"
-            initial={{ 
-              x: Math.random() * (typeof window !== 'undefined' ? window.innerWidth : 1200),
-              y: Math.random() * (typeof window !== 'undefined' ? window.innerHeight : 800),
-            }}
-            animate={{
-              y: [null, Math.random() * -200 - 100],
-              opacity: [0, 1, 0],
-            }}
-            transition={{
-              duration: Math.random() * 10 + 10,
-              repeat: Infinity,
-              delay: Math.random() * 5,
-            }}
-          />
-        ))}
-      </div>
-      
-      {/* Fixed Header */}
-      <motion.header 
-        className={`fixed left-0 right-0 top-0 z-50 transition-colors duration-300 ${
-          hasScrolled ? 'border-b border-border/50 bg-background/80 backdrop-blur-xl' : 'bg-transparent'
-        }`}
-        initial={{ y: 0 }}
-        animate={{ y: showNav ? 0 : -100 }}
-        transition={{ duration: 0.3, ease: 'easeInOut' }}
+    <div
+      className="relative min-h-screen overflow-hidden"
+      style={{ background: '#060709', color: '#eef0f6' }}
+    >
+      {/* ── BACKGROUND ── */}
+      <GridBackground />
+
+      {/* ── NAV ── */}
+      <motion.header
+        className="fixed left-0 right-0 top-0 z-50"
+        style={{
+          background: hasScrolled ? 'rgba(6,7,9,0.85)' : 'transparent',
+          backdropFilter: hasScrolled ? 'blur(16px)' : 'none',
+          borderBottom: hasScrolled ? '1px solid rgba(255,255,255,0.05)' : '1px solid transparent',
+          transition: 'background 0.3s, border-color 0.3s',
+        }}
       >
-        <div className="mx-auto flex h-20 max-w-7xl items-center justify-between px-6">
-          <Link href="/" className="group flex items-center gap-3">
-            <motion.div 
-              className="relative flex size-10 items-center justify-center rounded-xl bg-primary shadow-lg shadow-primary/25"
-              whileHover={{ scale: 1.05 }}
-              whileTap={{ scale: 0.95 }}
+        <div className="mx-auto flex h-[68px] max-w-7xl items-center justify-between px-6">
+          {/* Logo */}
+          <Link href="/" className="flex items-center gap-2.5">
+            <PiWebhooksLogoFill
+              className="size-9"
+              style={{ color: '#00ff85' }}
+            />
+            <span
+              style={{
+                fontFamily: "'JetBrains Mono', monospace",
+                fontSize: 20,
+                fontWeight: 700,
+                letterSpacing: '-0.5px',
+              }}
             >
-              <Zap size={22} className="text-primary-foreground" />
-              <div className="absolute inset-0 rounded-xl bg-primary opacity-0 blur-md transition-opacity group-hover:opacity-50" />
-            </motion.div>
-            <span className="text-2xl font-bold tracking-tight">HookLens</span>
+              Hook<span style={{ color: '#00ff85' }}>Lens</span>
+            </span>
           </Link>
-          
+
+          {/* Links */}
           <nav className="hidden items-center gap-8 md:flex">
-            <Link href="/docs" className="text-sm font-medium text-muted-foreground transition-colors hover:text-foreground">
-              Documentation
-            </Link>
-            <Link href="#features" className="text-sm font-medium text-muted-foreground transition-colors hover:text-foreground">
-              Features
-            </Link>
-            <Link href="#integration" className="text-sm font-medium text-muted-foreground transition-colors hover:text-foreground">
-              Integration
-            </Link>
+            {['Documentation', 'Features', 'Integration'].map((l) => (
+              <Link
+                key={l}
+                href={l === 'Documentation' ? '/docs' : `#${l.toLowerCase()}`}
+                className="text-sm font-medium transition-colors"
+                style={{ color: 'rgba(238,240,246,0.45)' }}
+                onMouseEnter={(e) =>
+                  ((e.target as HTMLElement).style.color = 'rgba(238,240,246,1)')
+                }
+                onMouseLeave={(e) =>
+                  ((e.target as HTMLElement).style.color = 'rgba(238,240,246,0.45)')
+                }
+              >
+                {l}
+              </Link>
+            ))}
           </nav>
-          
+
+          {/* CTA */}
           <div className="flex items-center gap-3">
-            <Link href="/docs" className="hidden sm:block">
-              <Button variant="ghost" size="sm" className="gap-2">
-                <BookOpen size={16} />
-                Docs
-              </Button>
-            </Link>
-            <Link href="/login">
-              <Button size="sm" className="gap-2 shadow-lg shadow-primary/25">
-                Get Started
-                <ArrowRight size={16} />
-              </Button>
-            </Link>
+            {mounted && !user && (
+              <Link href="/docs">
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="gap-2 text-white/50 hover:text-white"
+                  style={{ fontSize: 13 }}
+                >
+                  <BookOpen size={14} />
+                  Docs
+                </Button>
+              </Link>
+            )}
+            {mounted && user ? (
+              <Link href="/dashboard">
+                <button
+                  style={{
+                    background: '#00ff85',
+                    color: '#000',
+                    border: 'none',
+                    borderRadius: 9,
+                    padding: '8px 18px',
+                    fontSize: 13,
+                    fontWeight: 700,
+                    cursor: 'pointer',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: 6,
+                    fontFamily: 'inherit',
+                    boxShadow: '0 0 24px rgba(0,255,133,0.2)',
+                    transition: 'all 0.2s',
+                  }}
+                  onMouseEnter={(e) => {
+                    ;(e.currentTarget as HTMLButtonElement).style.boxShadow =
+                      '0 0 36px rgba(0,255,133,0.4)'
+                    ;(e.currentTarget as HTMLButtonElement).style.transform = 'translateY(-1px)'
+                  }}
+                  onMouseLeave={(e) => {
+                    ;(e.currentTarget as HTMLButtonElement).style.boxShadow =
+                      '0 0 24px rgba(0,255,133,0.2)'
+                    ;(e.currentTarget as HTMLButtonElement).style.transform = 'translateY(0)'
+                  }}
+                >
+                  Dashboard <LayoutDashboard size={13} />
+                </button>
+              </Link>
+            ) : (
+              <Link href="/login">
+                <button
+                  style={{
+                    background: '#00ff85',
+                    color: '#000',
+                    border: 'none',
+                    borderRadius: 9,
+                    padding: '8px 18px',
+                    fontSize: 13,
+                    fontWeight: 700,
+                    cursor: 'pointer',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: 6,
+                    fontFamily: 'inherit',
+                    boxShadow: '0 0 24px rgba(0,255,133,0.2)',
+                    transition: 'all 0.2s',
+                  }}
+                  onMouseEnter={(e) => {
+                    ;(e.currentTarget as HTMLButtonElement).style.boxShadow =
+                      '0 0 36px rgba(0,255,133,0.4)'
+                    ;(e.currentTarget as HTMLButtonElement).style.transform = 'translateY(-1px)'
+                  }}
+                  onMouseLeave={(e) => {
+                    ;(e.currentTarget as HTMLButtonElement).style.boxShadow =
+                      '0 0 24px rgba(0,255,133,0.2)'
+                    ;(e.currentTarget as HTMLButtonElement).style.transform = 'translateY(0)'
+                  }}
+                >
+                  {user ? 'Go to Dashboard' : 'Get started'} <ArrowRight size={13} />
+                </button>
+              </Link>
+            )}
           </div>
         </div>
       </motion.header>
-      
-      {/* Content */}
-      <div className="relative mx-auto flex min-h-screen max-w-7xl flex-col px-6 pt-20">
-        
-        {/* Hero Section */}
-        <motion.section 
-          ref={heroRef}
-          style={{ opacity: heroOpacity, scale: heroScale, y: heroY }}
-          className="flex flex-1 flex-col items-center justify-center pb-20 pt-10 text-center"
+
+      {/* ── HERO ── */}
+      <motion.section
+        ref={heroRef}
+        style={{ opacity: heroOpacity, y: heroY }}
+        className="relative z-10 flex min-h-screen flex-col items-center justify-center px-6 pb-20 pt-28 text-center"
+      >
+        {/* Badge */}
+        <motion.div
+          initial={{ opacity: 0, y: 16 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.6, delay: 0.1 }}
+          style={{
+            display: 'inline-flex',
+            alignItems: 'center',
+            gap: 8,
+            background: 'rgba(0,255,133,0.07)',
+            border: '1px solid rgba(0,255,133,0.2)',
+            borderRadius: 100,
+            padding: '5px 16px',
+            marginBottom: 36,
+            fontFamily: "'JetBrains Mono', monospace",
+            fontSize: 12,
+            color: '#00ff85',
+            letterSpacing: '0.3px',
+          }}
         >
-          <motion.div
-            initial={{ opacity: 0, y: 30 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.8, ease: 'easeOut' }}
+          <span
+            style={{
+              width: 6,
+              height: 6,
+              borderRadius: '50%',
+              background: '#00ff85',
+              display: 'inline-block',
+              boxShadow: '0 0 8px #00ff85',
+              animation: 'pulse 2s infinite',
+            }}
+          />
+          Now supporting 50+ webhook providers
+        </motion.div>
+
+        {/* Heading */}
+        <motion.h1
+          initial={{ opacity: 0, y: 24 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.7, delay: 0.2 }}
+          style={{
+            fontFamily: "'Syne', sans-serif",
+            fontSize: 'clamp(38px, 6vw, 78px)',
+            fontWeight: 800,
+            lineHeight: 0.92,
+            letterSpacing: '-3px',
+            marginBottom: 28,
+            maxWidth: 900,
+          }}
+        >
+          <span style={{ display: 'block', color: '#eef0f6' }}>Debug Webhooks</span>
+          <span
+            style={{
+              display: 'block',
+              background: 'linear-gradient(90deg, #00ff85, #00e5ff, #00ff85)',
+              backgroundSize: '200%',
+              WebkitBackgroundClip: 'text',
+              WebkitTextFillColor: 'transparent',
+              backgroundClip: 'text',
+              animation: 'shimmer 4s linear infinite',
+            }}
           >
-            {/* Badge */}
-            <motion.div 
-              className="mb-8 inline-flex items-center gap-2 rounded-full border border-primary/30 bg-primary/10 px-4 py-2 text-sm font-medium text-primary backdrop-blur-sm"
-              initial={{ opacity: 0, scale: 0.9 }}
-              animate={{ opacity: 1, scale: 1 }}
-              transition={{ delay: 0.2 }}
-            >
-              <span className="relative flex size-2">
-                <span className="absolute inline-flex size-full animate-ping rounded-full bg-primary opacity-75" />
-                <span className="relative inline-flex size-2 rounded-full bg-primary" />
-              </span>
-              Now supporting 50+ webhook providers
-            </motion.div>
-            
-            {/* Main Heading */}
-            <h1 className="mx-auto max-w-5xl text-balance text-5xl font-bold tracking-tight sm:text-6xl lg:text-7xl xl:text-8xl">
-              <span className="block">Debug Webhooks</span>
-              <span className="mt-2 block bg-gradient-to-r from-primary via-accent to-primary bg-clip-text text-transparent">
-                Like Never Before
-              </span>
-            </h1>
-            
-            <p className="mx-auto mt-8 max-w-2xl text-pretty text-lg text-muted-foreground sm:text-xl">
-              Capture. Understand. Replay. The AI-powered webhook debugger 
-              that makes debugging feel like magic.
-            </p>
-            
-            {/* CTA Buttons */}
-            <motion.div 
-              className="mt-12 flex flex-col items-center gap-4 sm:flex-row sm:justify-center"
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.4 }}
-            >
+            Like Never Before
+          </span>
+        </motion.h1>
+
+        {/* Subheadline */}
+        <motion.p
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.7, delay: 0.3 }}
+          style={{
+            fontSize: 18,
+            color: 'rgba(238,240,246,0.5)',
+            maxWidth: 520,
+            lineHeight: 1.75,
+            marginBottom: 44,
+          }}
+        >
+          Capture. Understand. Replay. The AI-powered webhook debugger that makes
+          debugging feel like{' '}
+          <span style={{ color: 'rgba(238,240,246,0.85)', fontStyle: 'italic' }}>
+            magic.
+          </span>
+        </motion.p>
+
+        {/* CTAs */}
+        <motion.div
+          initial={{ opacity: 0, y: 16 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.6, delay: 0.4 }}
+          style={{ display: 'flex', gap: 12, alignItems: 'center', flexWrap: 'wrap', justifyContent: 'center', marginBottom: 64 }}
+        >
+          {mounted && user ? (
+            <Link href="/dashboard">
+              <button
+                style={{
+                  background: '#00ff85',
+                  color: '#000',
+                  border: 'none',
+                  borderRadius: 12,
+                  padding: '15px 30px',
+                  fontSize: 15,
+                  fontWeight: 700,
+                  cursor: 'pointer',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: 8,
+                  fontFamily: 'inherit',
+                  boxShadow: '0 8px 40px rgba(0,255,133,0.3)',
+                  transition: 'all 0.25s',
+                }}
+                onMouseEnter={(e) => {
+                  ;(e.currentTarget as HTMLButtonElement).style.transform = 'translateY(-2px)'
+                  ;(e.currentTarget as HTMLButtonElement).style.boxShadow =
+                    '0 16px 60px rgba(0,255,133,0.4)'
+                }}
+                onMouseLeave={(e) => {
+                  ;(e.currentTarget as HTMLButtonElement).style.transform = 'translateY(0)'
+                  ;(e.currentTarget as HTMLButtonElement).style.boxShadow =
+                    '0 8px 40px rgba(0,255,133,0.3)'
+                }}
+              >
+                <Zap size={17} /> Go to Dashboard <ArrowRight size={16} />
+              </button>
+            </Link>
+          ) : (
+            <>
               <Link href="/login">
-                <Button size="lg" className="h-14 gap-3 px-8 text-base shadow-xl shadow-primary/30">
-                  <Zap size={20} />
-                  Start Debugging Free
-                  <ArrowRight size={18} />
-                </Button>
+                <button
+                  style={{
+                    background: '#00ff85',
+                    color: '#000',
+                    border: 'none',
+                    borderRadius: 12,
+                    padding: '15px 30px',
+                    fontSize: 15,
+                    fontWeight: 700,
+                    cursor: 'pointer',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: 8,
+                    fontFamily: 'inherit',
+                    boxShadow: '0 8px 40px rgba(0,255,133,0.3)',
+                    transition: 'all 0.25s',
+                  }}
+                  onMouseEnter={(e) => {
+                    ;(e.currentTarget as HTMLButtonElement).style.transform = 'translateY(-2px)'
+                    ;(e.currentTarget as HTMLButtonElement).style.boxShadow =
+                      '0 16px 60px rgba(0,255,133,0.4)'
+                  }}
+                  onMouseLeave={(e) => {
+                    ;(e.currentTarget as HTMLButtonElement).style.transform = 'translateY(0)'
+                    ;(e.currentTarget as HTMLButtonElement).style.boxShadow =
+                      '0 8px 40px rgba(0,255,133,0.3)'
+                  }}
+                >
+                  <Zap size={17} /> Start Debugging Free <ArrowRight size={16} />
+                </button>
               </Link>
               <Link href="/docs">
-                <Button variant="outline" size="lg" className="h-14 gap-3 px-8 text-base">
-                  <BookOpen size={20} />
-                  Read the Docs
-                </Button>
+                <button
+                  style={{
+                    background: 'rgba(255,255,255,0.04)',
+                    color: 'rgba(238,240,246,0.7)',
+                    border: '1px solid rgba(255,255,255,0.1)',
+                    borderRadius: 12,
+                    padding: '15px 30px',
+                    fontSize: 15,
+                    fontWeight: 600,
+                    cursor: 'pointer',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: 8,
+                    fontFamily: 'inherit',
+                    transition: 'all 0.25s',
+                  }}
+                  onMouseEnter={(e) => {
+                    ;(e.currentTarget as HTMLButtonElement).style.borderColor =
+                      'rgba(255,255,255,0.2)'
+                    ;(e.currentTarget as HTMLButtonElement).style.color = '#eef0f6'
+                  }}
+                  onMouseLeave={(e) => {
+                    ;(e.currentTarget as HTMLButtonElement).style.borderColor =
+                      'rgba(255,255,255,0.1)'
+                    ;(e.currentTarget as HTMLButtonElement).style.color = 'rgba(238,240,246,0.7)'
+                  }}
+                >
+                  <BookOpen size={16} /> Read the Docs
+                </button>
               </Link>
-            </motion.div>
-            
-            {/* Trust indicators */}
-            <motion.div
-              className="mt-16 flex flex-wrap items-center justify-center gap-x-8 gap-y-4 text-sm text-muted-foreground"
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              transition={{ delay: 0.6 }}
-            >
-              <div className="flex items-center gap-2">
-                <Shield size={16} className="text-primary" />
-                <span>SOC 2 Compliant</span>
-              </div>
-              <div className="flex items-center gap-2">
-                <Clock size={16} className="text-primary" />
-                <span>99.9% Uptime</span>
-              </div>
-              <div className="flex items-center gap-2">
-                <Webhook size={16} className="text-primary" />
-                <span>50+ Providers</span>
-              </div>
-            </motion.div>
-          </motion.div>
-        </motion.section>
-      </div>
-      
-      {/* Providers Section */}
-      <section className="relative border-y border-border/50 bg-card/30 py-12 backdrop-blur-sm">
+            </>
+          )}
+        </motion.div>
+      </motion.section>
+
+      {/* ── PROVIDERS ── */}
+      <section
+        className="relative z-10 py-14"
+        style={{ borderTop: '1px solid rgba(255,255,255,0.05)', borderBottom: '1px solid rgba(255,255,255,0.05)' }}
+      >
         <div className="mx-auto max-w-7xl px-6">
-          <p className="mb-8 text-center text-sm font-medium uppercase tracking-wider text-muted-foreground">
-            Works with your favorite providers
+          <p
+            style={{
+              textAlign: 'center',
+              fontFamily: "'JetBrains Mono', monospace",
+              fontSize: 10,
+              letterSpacing: '3px',
+              textTransform: 'uppercase',
+              color: 'rgba(238,240,246,0.25)',
+              marginBottom: 36,
+            }}
+          >
+            Works with your stack
           </p>
-          <div className="flex flex-wrap items-center justify-center gap-x-12 gap-y-6">
-            {providers.map((provider, i) => (
+          <div
+            style={{
+              display: 'flex',
+              flexWrap: 'wrap',
+              gap: '12px 28px',
+              justifyContent: 'center',
+              alignItems: 'center',
+            }}
+          >
+            {providers.map((p, i) => (
               <motion.span
-                key={provider}
-                initial={{ opacity: 0, y: 10 }}
+                key={p.name}
+                initial={{ opacity: 0, y: 8 }}
                 whileInView={{ opacity: 1, y: 0 }}
                 viewport={{ once: true }}
                 transition={{ delay: i * 0.05 }}
-                className="text-lg font-semibold text-muted-foreground/60 transition-colors hover:text-foreground"
+                style={{
+                  fontFamily: "'Syne', sans-serif",
+                  fontWeight: 700,
+                  fontSize: 17,
+                  color: 'rgba(238,240,246,0.2)',
+                  cursor: 'default',
+                  transition: 'color 0.2s',
+                  letterSpacing: '-0.3px',
+                }}
+                whileHover={{ color: 'rgba(238,240,246,0.7)' } as any}
               >
-                {provider}
+                {p.name}
               </motion.span>
             ))}
           </div>
         </div>
       </section>
-      
-      {/* Features Section */}
-      <section id="features" className="relative py-32">
-        <div className="mx-auto max-w-7xl px-6">
+
+      {/* ── FEATURES ── */}
+      <section id="features" className="relative z-10 px-6 py-28">
+        <div className="mx-auto max-w-7xl">
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true }}
-            className="mb-16 text-center"
+            style={{ marginBottom: 60 }}
           >
-            <h2 className="text-4xl font-bold tracking-tight sm:text-5xl">
+            <p
+              style={{
+                fontFamily: "'JetBrains Mono', monospace",
+                fontSize: 10,
+                letterSpacing: '3px',
+                textTransform: 'uppercase',
+                color: '#00ff85',
+                marginBottom: 14,
+              }}
+            >
+              // capabilities
+            </p>
+            <h2
+              style={{
+                fontFamily: "'Syne', sans-serif",
+                fontSize: 'clamp(36px,5vw,58px)',
+                fontWeight: 800,
+                letterSpacing: '-2.5px',
+                lineHeight: 1.0,
+                marginBottom: 16,
+                color: '#eef0f6',
+              }}
+            >
               Everything you need to
-              <span className="text-primary"> debug webhooks</span>
+              <br />
+              <span style={{ color: '#00ff85' }}>debug webhooks.</span>
             </h2>
-            <p className="mx-auto mt-4 max-w-2xl text-lg text-muted-foreground">
-              Built for modern development workflows. No more print statements or manual testing.
+            <p style={{ fontSize: 16, color: 'rgba(238,240,246,0.45)', maxWidth: 440, lineHeight: 1.7 }}>
+              Built for the modern development loop. No more print statements or manual testing.
             </p>
           </motion.div>
-          
-          <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-            {features.map((feature, index) => (
+
+          {/* 3-col grid with shared borders */}
+          <div
+            style={{
+              display: 'grid',
+              gridTemplateColumns: 'repeat(3, 1fr)',
+              gap: 1,
+              background: 'rgba(255,255,255,0.05)',
+              border: '1px solid rgba(255,255,255,0.05)',
+              borderRadius: 20,
+              overflow: 'hidden',
+            }}
+          >
+            {features.map((f, i) => (
               <motion.div
-                key={feature.title}
-                initial={{ opacity: 0, y: 30 }}
+                key={f.title}
+                initial={{ opacity: 0, y: 24 }}
                 whileInView={{ opacity: 1, y: 0 }}
                 viewport={{ once: true }}
-                transition={{ delay: index * 0.1 }}
-                className="group relative overflow-hidden rounded-2xl border border-border bg-card/50 p-8 backdrop-blur-sm transition-all duration-300 hover:border-primary/30 hover:bg-card hover:shadow-xl hover:shadow-primary/5"
+                transition={{ delay: i * 0.07 }}
+                className="group"
+                style={{
+                  background: '#0a0c10',
+                  padding: '36px 32px',
+                  position: 'relative',
+                  overflow: 'hidden',
+                  transition: 'background 0.3s',
+                }}
+                onMouseEnter={(e) => {
+                  ;(e.currentTarget as HTMLDivElement).style.background = '#0d1018'
+                }}
+                onMouseLeave={(e) => {
+                  ;(e.currentTarget as HTMLDivElement).style.background = '#0a0c10'
+                }}
               >
-                <div className="absolute right-0 top-0 h-32 w-32 translate-x-8 translate-y--8 rounded-full bg-primary/5 blur-2xl transition-all group-hover:bg-primary/10" />
-                
-                <div className="relative">
-                  <div className="mb-6 flex size-14 items-center justify-center rounded-xl bg-primary/10 transition-colors group-hover:bg-primary/20">
-                    <feature.icon size={26} className="text-primary" />
-                  </div>
-                  <h3 className="mb-3 text-xl font-semibold">{feature.title}</h3>
-                  <p className="text-muted-foreground">{feature.description}</p>
+                {/* hover top line */}
+                <div
+                  style={{
+                    position: 'absolute',
+                    top: 0,
+                    left: 0,
+                    right: 0,
+                    height: 1,
+                    background: 'linear-gradient(90deg, transparent, #00ff85, transparent)',
+                    opacity: 0,
+                    transition: 'opacity 0.3s',
+                  }}
+                  className="group-hover:opacity-100"
+                />
+                <div
+                  style={{
+                    fontFamily: "'JetBrains Mono', monospace",
+                    fontSize: 10,
+                    color: 'rgba(0,255,133,0.4)',
+                    fontWeight: 700,
+                    letterSpacing: '1px',
+                    marginBottom: 18,
+                  }}
+                >
+                  {f.tag}
                 </div>
+                <div
+                  style={{
+                    width: 44,
+                    height: 44,
+                    borderRadius: 12,
+                    background: 'rgba(0,255,133,0.07)',
+                    border: '1px solid rgba(0,255,133,0.12)',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    marginBottom: 20,
+                    color: '#00ff85',
+                  }}
+                >
+                  <f.icon size={20} />
+                </div>
+                <h3
+                  style={{
+                    fontFamily: "'Syne', sans-serif",
+                    fontSize: 18,
+                    fontWeight: 700,
+                    letterSpacing: '-0.5px',
+                    marginBottom: 10,
+                    color: '#eef0f6',
+                  }}
+                >
+                  {f.title}
+                </h3>
+                <p style={{ fontSize: 14, color: 'rgba(238,240,246,0.4)', lineHeight: 1.7 }}>
+                  {f.description}
+                </p>
               </motion.div>
             ))}
           </div>
         </div>
       </section>
-      
-      {/* Integration Section */}
-      <section id="integration" className="relative border-y border-border/50 bg-card/30 py-32 backdrop-blur-sm">
-        <div className="mx-auto max-w-7xl px-6">
-          <div className="grid items-center gap-16 lg:grid-cols-2">
-            <motion.div
-              initial={{ opacity: 0, x: -30 }}
-              whileInView={{ opacity: 1, x: 0 }}
-              viewport={{ once: true }}
-            >
-              <div className="mb-6 inline-flex items-center gap-2 rounded-full border border-primary/30 bg-primary/10 px-3 py-1 text-sm font-medium text-primary">
-                <Terminal size={14} />
-                Quick Integration
-              </div>
-              <h2 className="text-4xl font-bold tracking-tight sm:text-5xl">
-                Add to your app in
-                <span className="text-primary"> 2 minutes</span>
-              </h2>
-              <p className="mt-6 text-lg text-muted-foreground">
-                Install our lightweight middleware package, add a single line of code, 
-                and start capturing webhooks instantly. Works with Express, Next.js, 
-                Fastify, and any Node.js framework.
-              </p>
-              
-              <div className="mt-8 flex flex-col gap-4 sm:flex-row">
-                <Link href="/docs">
-                  <Button size="lg" className="gap-2">
-                    View Documentation
-                    <ChevronRight size={18} />
-                  </Button>
-                </Link>
-                <Button variant="outline" size="lg" className="gap-2">
-                  <Github size={18} />
-                  View on GitHub
-                </Button>
-              </div>
-            </motion.div>
-            
-            <motion.div
-              initial={{ opacity: 0, x: 30 }}
-              whileInView={{ opacity: 1, x: 0 }}
-              viewport={{ once: true }}
-              className="relative"
-            >
-              <div className="absolute -inset-4 rounded-2xl bg-gradient-to-r from-primary/20 via-transparent to-primary/10 blur-xl" />
-              <div className="relative overflow-hidden rounded-xl border border-border bg-[#0d1117] p-6 font-mono text-sm shadow-2xl">
-                <div className="mb-4 flex items-center gap-2">
-                  <div className="size-3 rounded-full bg-red-500/80" />
-                  <div className="size-3 rounded-full bg-yellow-500/80" />
-                  <div className="size-3 rounded-full bg-green-500/80" />
-                  <span className="ml-3 text-xs text-muted-foreground">middleware.ts</span>
-                </div>
-                <pre className="overflow-x-auto">
-                  <code className="text-[13px] leading-relaxed">
-                    <span className="text-gray-500">{'// .env'}</span>
-                    {'\n'}
-                    <span className="text-blue-300">HOOK_LENS_API_KEY</span>
-                    <span className="text-gray-300">=</span>
-                    <span className="text-emerald-300">hlk_xxxxxxxxxxxx</span>
-                    {'\n\n'}
-                    <span className="text-purple-400">import</span>
-                    <span className="text-gray-300">{' { '}</span>
-                    <span className="text-blue-300">HookLens</span>
-                    <span className="text-gray-300">{' } '}</span>
-                    <span className="text-purple-400">from</span>
-                    <span className="text-emerald-300">{` 'hooklens'`}</span>
-                    {'\n\n'}
-                    <span className="text-purple-400">const</span>
-                    <span className="text-blue-300"> hooks </span>
-                    <span className="text-gray-300">= </span>
-                    <span className="text-yellow-300">HookLens</span>
-                    <span className="text-gray-300">{'({'}</span>
-                    {'\n'}
-                    <span className="text-gray-300">{'  '}</span>
-                    <span className="text-blue-300">projectName</span>
-                    <span className="text-gray-300">: </span>
-                    <span className="text-emerald-300">{`'my-app'`}</span>
-                    <span className="text-gray-300">,</span>
-                    {'\n'}
-                    <span className="text-gray-300">{'  '}</span>
-                    <span className="text-blue-300">provider</span>
-                    <span className="text-gray-300">: </span>
-                    <span className="text-emerald-300">{`'stripe'`}</span>
-                    {'\n'}
-                    <span className="text-gray-300">{'})'}</span>
-                    {'\n\n'}
-                    <span className="text-blue-300">app</span>
-                    <span className="text-gray-300">.</span>
-                    <span className="text-yellow-300">use</span>
-                    <span className="text-gray-300">(</span>
-                    <span className="text-emerald-300">{`'/webhooks'`}</span>
-                    <span className="text-gray-300">, </span>
-                    <span className="text-blue-300">hooks</span>
-                    <span className="text-gray-300">.</span>
-                    <span className="text-yellow-300">capture</span>
-                    <span className="text-gray-300">{'())'}</span>
-                  </code>
-                </pre>
-              </div>
-            </motion.div>
-          </div>
-        </div>
-      </section>
-      
-      {/* CTA Section */}
-      <section className="relative py-32">
-        <div className="absolute inset-0 bg-gradient-to-b from-transparent via-primary/5 to-transparent" />
-        <div className="relative mx-auto max-w-4xl px-6 text-center">
+
+      {/* ── INTEGRATION ── */}
+      <section
+        id="integration"
+        className="relative z-10 px-6 py-28"
+        style={{
+          borderTop: '1px solid rgba(255,255,255,0.05)',
+          borderBottom: '1px solid rgba(255,255,255,0.05)',
+          background: 'rgba(255,255,255,0.01)',
+        }}
+      >
+        <div className="mx-auto grid max-w-6xl items-center gap-16 lg:grid-cols-2">
+          {/* Left copy */}
           <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            whileInView={{ opacity: 1, y: 0 }}
+            initial={{ opacity: 0, x: -24 }}
+            whileInView={{ opacity: 1, x: 0 }}
             viewport={{ once: true }}
           >
-            <h2 className="text-4xl font-bold tracking-tight sm:text-5xl">
-              Ready to debug smarter?
+            <div
+              style={{
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: 7,
+                background: 'rgba(0,255,133,0.07)',
+                border: '1px solid rgba(0,255,133,0.18)',
+                borderRadius: 100,
+                padding: '4px 14px',
+                fontSize: 12,
+                color: '#00ff85',
+                fontFamily: "'JetBrains Mono', monospace",
+                marginBottom: 22,
+              }}
+            >
+              <Terminal size={12} /> Quick Integration
+            </div>
+            <h2
+              style={{
+                fontFamily: "'Syne', sans-serif",
+                fontSize: 'clamp(34px,4.5vw,52px)',
+                fontWeight: 800,
+                letterSpacing: '-2px',
+                lineHeight: 1.05,
+                marginBottom: 18,
+                color: '#eef0f6',
+              }}
+            >
+              Add to your app
+              <br />
+              <span style={{ color: '#00ff85' }}>in 2 minutes.</span>
             </h2>
-            <p className="mx-auto mt-6 max-w-xl text-lg text-muted-foreground">
-              Join thousands of developers who have already transformed their webhook debugging workflow.
+            <p
+              style={{ fontSize: 16, color: 'rgba(238,240,246,0.45)', lineHeight: 1.75, marginBottom: 32 }}
+            >
+              Install our lightweight middleware package, add a single line of code, and start
+              capturing webhooks instantly. Works with Express, Next.js, Fastify, and any Node.js
+              framework.
             </p>
-            <div className="mt-10 flex flex-col items-center gap-4 sm:flex-row sm:justify-center">
-              <Link href="/login">
-                <Button size="lg" className="h-14 gap-3 px-10 text-base shadow-xl shadow-primary/30">
-                  <Zap size={20} />
-                  Get Started Free
-                </Button>
-              </Link>
+
+            {/* Steps */}
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 20, marginBottom: 36 }}>
+              {[
+                { n: '1', title: 'Install the package', body: 'npm install hooklens-node' },
+                { n: '2', title: 'Add one line of middleware', body: 'app.use(hooklens({ provider: "{provider}" }))' },
+                { n: '3', title: 'Open your dashboard', body: 'Events stream in live, instantly.' },
+              ].map((s) => (
+                <div key={s.n} style={{ display: 'flex', gap: 16, alignItems: 'flex-start' }}>
+                  <div
+                    style={{
+                      width: 30,
+                      height: 30,
+                      borderRadius: '50%',
+                      background: 'rgba(0,255,133,0.08)',
+                      border: '1px solid rgba(0,255,133,0.2)',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      fontFamily: "'JetBrains Mono', monospace",
+                      fontSize: 11,
+                      fontWeight: 700,
+                      color: '#00ff85',
+                      flexShrink: 0,
+                      marginTop: 2,
+                    }}
+                  >
+                    {s.n}
+                  </div>
+                  <div>
+                    <p style={{ fontSize: 15, fontWeight: 600, color: '#eef0f6', marginBottom: 2 }}>
+                      {s.title}
+                    </p>
+                    <p
+                      style={{
+                        fontFamily: "'JetBrains Mono', monospace",
+                        fontSize: 12,
+                        color: 'rgba(238,240,246,0.35)',
+                      }}
+                    >
+                      {s.body}
+                    </p>
+                  </div>
+                </div>
+              ))}
+            </div>
+
+            <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap' }}>
               <Link href="/docs">
-                <Button variant="outline" size="lg" className="h-14 gap-3 px-10 text-base">
-                  Read Documentation
-                </Button>
+                <button
+                  style={{
+                    background: '#00ff85',
+                    color: '#000',
+                    border: 'none',
+                    borderRadius: 10,
+                    padding: '12px 24px',
+                    fontSize: 14,
+                    fontWeight: 700,
+                    cursor: 'pointer',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: 7,
+                    fontFamily: 'inherit',
+                    transition: 'all 0.2s',
+                  }}
+                >
+                  View Docs <ChevronRight size={15} />
+                </button>
               </Link>
+              <button
+                style={{
+                  background: 'transparent',
+                  color: 'rgba(238,240,246,0.6)',
+                  border: '1px solid rgba(255,255,255,0.1)',
+                  borderRadius: 10,
+                  padding: '12px 24px',
+                  fontSize: 14,
+                  fontWeight: 600,
+                  cursor: 'pointer',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: 7,
+                  fontFamily: 'inherit',
+                  transition: 'all 0.2s',
+                }}
+              >
+                <Github size={15} /> GitHub
+              </button>
+            </div>
+          </motion.div>
+
+          {/* Right: code block */}
+          <motion.div
+            initial={{ opacity: 0, x: 24 }}
+            whileInView={{ opacity: 1, x: 0 }}
+            viewport={{ once: true }}
+            style={{ position: 'relative' }}
+          >
+            <div
+              style={{
+                position: 'absolute',
+                inset: -16,
+                background: 'radial-gradient(ellipse at center, rgba(0,255,133,0.08), transparent 70%)',
+                borderRadius: 24,
+                pointerEvents: 'none',
+              }}
+            />
+            <div
+              style={{
+                position: 'relative',
+                background: '#070910',
+                border: '1px solid rgba(255,255,255,0.07)',
+                borderRadius: 18,
+                overflow: 'hidden',
+                boxShadow: '0 32px 80px rgba(0,0,0,0.5)',
+              }}
+            >
+              {/* Chrome */}
+              <div
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: 6,
+                  padding: '13px 18px',
+                  background: '#060709',
+                  borderBottom: '1px solid rgba(255,255,255,0.05)',
+                }}
+              >
+                <span style={{ width: 10, height: 10, borderRadius: '50%', background: '#ff5f57' }} />
+                <span style={{ width: 10, height: 10, borderRadius: '50%', background: '#febc2e' }} />
+                <span style={{ width: 10, height: 10, borderRadius: '50%', background: '#28c840' }} />
+                <span
+                  style={{
+                    marginLeft: 10,
+                    fontFamily: "'JetBrains Mono', monospace",
+                    fontSize: 11,
+                    color: 'rgba(255,255,255,0.25)',
+                  }}
+                >
+                  middleware.ts
+                </span>
+              </div>
+
+              {/* Code */}
+              <pre
+                style={{
+                  padding: '24px 22px',
+                  fontFamily: "'JetBrains Mono', monospace",
+                  fontSize: 13,
+                  lineHeight: 1.8,
+                  overflowX: 'auto',
+                  margin: 0,
+                }}
+              >
+                <span style={{ color: '#546e7a' }}>{'// .env'}</span>
+                {'\n'}
+                <span style={{ color: '#80cbc4' }}>HOOKLENS_API_KEY</span>
+                <span style={{ color: 'rgba(255,255,255,0.3)' }}>=</span>
+                <span style={{ color: '#a8ff78' }}>process.env.HOOKLENS_API_KEY</span>
+                {'\n\n'}
+                <span style={{ color: '#c792ea' }}>import</span>
+                <span style={{ color: 'rgba(255,255,255,0.5)' }}>{' { '}</span>
+                <span style={{ color: '#82aaff' }}>hooklens</span>
+                <span style={{ color: 'rgba(255,255,255,0.5)' }}>{' } '}</span>
+                <span style={{ color: '#c792ea' }}>from</span>
+                <span style={{ color: '#a8ff78' }}>{` 'hooklens-node'`}</span>
+                {'\n\n'}
+                <span style={{ color: '#c792ea' }}>const</span>
+                <span style={{ color: '#82aaff' }}> hooklensClient </span>
+                <span style={{ color: 'rgba(255,255,255,0.4)' }}>= </span>
+                <span style={{ color: '#ffcb6b' }}>hooklens</span>
+                <span style={{ color: 'rgba(255,255,255,0.4)' }}>{'({'}</span>
+                {'\n'}
+                <span style={{ color: 'rgba(255,255,255,0.4)' }}>{'  '}</span>
+                <span style={{ color: '#80cbc4' }}>provider</span>
+                <span style={{ color: 'rgba(255,255,255,0.4)' }}>: </span>
+                <span style={{ color: '#a8ff78' }}>{`'{provider}'`}</span>
+                {'\n'}
+                <span style={{ color: 'rgba(255,255,255,0.4)' }}>{'})'}</span>
+                {'\n\n'}
+                <span style={{ color: '#82aaff' }}>app</span>
+                <span style={{ color: 'rgba(255,255,255,0.4)' }}>.</span>
+                <span style={{ color: '#ffcb6b' }}>use</span>
+                <span style={{ color: 'rgba(255,255,255,0.4)' }}>(</span>
+                <span style={{ color: '#a8ff78' }}>{`'/webhooks/{provider}'`}</span>
+                <span style={{ color: 'rgba(255,255,255,0.4)' }}>, </span>
+                <span style={{ color: '#82aaff' }}>hooklensClient</span>
+                <span style={{ color: 'rgba(255,255,255,0.4)' }}>{')'}</span>
+              </pre>
+
+              {/* install pill */}
+              <div
+                style={{
+                  margin: '0 22px 22px',
+                  padding: '10px 16px',
+                  background: 'rgba(0,255,133,0.05)',
+                  border: '1px solid rgba(0,255,133,0.12)',
+                  borderRadius: 10,
+                  fontFamily: "'JetBrains Mono', monospace",
+                  fontSize: 12,
+                  color: 'rgba(238,240,246,0.5)',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: 10,
+                }}
+              >
+                <span style={{ color: '#00ff85' }}>$</span>
+                <span>npm install hooklens-node</span>
+                <span
+                  style={{
+                    marginLeft: 'auto',
+                    fontSize: 10,
+                    color: '#00ff85',
+                    background: 'rgba(0,255,133,0.1)',
+                    padding: '2px 8px',
+                    borderRadius: 4,
+                  }}
+                >
+                  v1.0
+                </span>
+              </div>
             </div>
           </motion.div>
         </div>
       </section>
-      
-      {/* Footer */}
-      <footer ref={footerRef} className="border-t border-border/50 py-12">
-        <div className="mx-auto max-w-7xl px-6">
-          <div className="flex flex-col items-center justify-between gap-6 md:flex-row">
-            <Link href="/" className="flex items-center gap-2">
-              <div className="flex size-8 items-center justify-center rounded-lg bg-primary">
-                <Zap size={16} className="text-primary-foreground" />
-              </div>
-              <span className="text-lg font-semibold">HookLens</span>
-            </Link>
-            <div className="flex items-center gap-8 text-sm text-muted-foreground">
-              <Link href="/docs" className="hover:text-foreground">Documentation</Link>
-              <Link href="/login" className="hover:text-foreground">Sign In</Link>
-              <a href="https://github.com" target="_blank" rel="noopener noreferrer" className="hover:text-foreground">GitHub</a>
-            </div>
-            <p className="text-sm text-muted-foreground">
+
+      {/* ── CTA ── */}
+      <section className="relative z-10 px-6 py-32 text-center">
+        <div
+          style={{
+            position: 'absolute',
+            top: '50%',
+            left: '50%',
+            transform: 'translate(-50%,-50%)',
+            width: 700,
+            height: 500,
+            background: 'radial-gradient(ellipse, rgba(0,255,133,0.06), transparent 70%)',
+            pointerEvents: 'none',
+          }}
+        />
+        <motion.div
+          initial={{ opacity: 0, y: 24 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          viewport={{ once: true }}
+          className="relative mx-auto max-w-3xl"
+        >
+          <h2
+            style={{
+              fontFamily: "'Syne', sans-serif",
+              fontSize: 'clamp(42px, 6vw, 76px)',
+              fontWeight: 800,
+              letterSpacing: '-3px',
+              lineHeight: 0.96,
+              marginBottom: 22,
+              color: '#eef0f6',
+            }}
+          >
+            Ready to debug
+            <br />
+            <span style={{ color: '#00ff85' }}>smarter?</span>
+          </h2>
+          <p
+            style={{
+              fontSize: 17,
+              color: 'rgba(238,240,246,0.45)',
+              maxWidth: 460,
+              margin: '0 auto 40px',
+              lineHeight: 1.7,
+            }}
+          >
+            {user 
+              ? 'View your webhook events and debug faster than ever.' 
+              : 'Join thousands of developers who have already transformed their webhook debugging workflow.'}
+          </p>
+          <div
+            style={{ display: 'flex', gap: 12, justifyContent: 'center', flexWrap: 'wrap', marginBottom: 24 }}
+          >
+            {mounted && user ? (
+              <Link href="/dashboard">
+                <button
+                  style={{
+                    background: '#00ff85',
+                    color: '#000',
+                    border: 'none',
+                    borderRadius: 12,
+                    padding: '16px 34px',
+                    fontSize: 16,
+                    fontWeight: 700,
+                    cursor: 'pointer',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: 8,
+                    fontFamily: 'inherit',
+                    boxShadow: '0 10px 50px rgba(0,255,133,0.3)',
+                    transition: 'all 0.25s',
+                  }}
+                  onMouseEnter={(e) => {
+                    ;(e.currentTarget as HTMLButtonElement).style.transform = 'translateY(-2px)'
+                    ;(e.currentTarget as HTMLButtonElement).style.boxShadow =
+                      '0 20px 70px rgba(0,255,133,0.45)'
+                  }}
+                  onMouseLeave={(e) => {
+                    ;(e.currentTarget as HTMLButtonElement).style.transform = 'translateY(0)'
+                    ;(e.currentTarget as HTMLButtonElement).style.boxShadow =
+                      '0 10px 50px rgba(0,255,133,0.3)'
+                  }}
+                >
+                  <Zap size={18} /> Go to Dashboard
+                </button>
+              </Link>
+            ) : (
+              <>
+                <Link href="/login">
+                  <button
+                    style={{
+                      background: '#00ff85',
+                      color: '#000',
+                      border: 'none',
+                      borderRadius: 12,
+                      padding: '16px 34px',
+                      fontSize: 16,
+                      fontWeight: 700,
+                      cursor: 'pointer',
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: 8,
+                      fontFamily: 'inherit',
+                      boxShadow: '0 10px 50px rgba(0,255,133,0.3)',
+                      transition: 'all 0.25s',
+                    }}
+                    onMouseEnter={(e) => {
+                      ;(e.currentTarget as HTMLButtonElement).style.transform = 'translateY(-2px)'
+                      ;(e.currentTarget as HTMLButtonElement).style.boxShadow =
+                        '0 20px 70px rgba(0,255,133,0.45)'
+                    }}
+                    onMouseLeave={(e) => {
+                      ;(e.currentTarget as HTMLButtonElement).style.transform = 'translateY(0)'
+                      ;(e.currentTarget as HTMLButtonElement).style.boxShadow =
+                        '0 10px 50px rgba(0,255,133,0.3)'
+                    }}
+                  >
+                    <Zap size={18} /> {user ? 'Go to Dashboard' : 'Get Started Free'}
+                  </button>
+                </Link>
+                <Link href="/docs">
+                  <button
+                    style={{
+                      background: 'rgba(255,255,255,0.04)',
+                      color: 'rgba(238,240,246,0.6)',
+                      border: '1px solid rgba(255,255,255,0.09)',
+                      borderRadius: 12,
+                      padding: '16px 34px',
+                      fontSize: 16,
+                      fontWeight: 600,
+                      cursor: 'pointer',
+                      fontFamily: 'inherit',
+                      transition: 'all 0.2s',
+                    }}
+                  >
+                    Read Documentation
+                  </button>
+                </Link>
+              </>
+            )}
+          </div>
+          <p
+            style={{
+              fontFamily: "'JetBrains Mono', monospace",
+              fontSize: 12,
+              color: 'rgba(238,240,246,0.2)',
+            }}
+          >
+            Free plan · No credit card required
+          </p>
+        </motion.div>
+      </section>
+
+      {/* ── FOOTER ── */}
+      <footer
+        style={{
+          borderTop: '1px solid rgba(255,255,255,0.05)',
+          padding: '48px 24px',
+          position: 'relative',
+          zIndex: 10,
+          background: 'linear-gradient(180deg, transparent 0%, rgba(0,255,133,0.02) 100%)',
+        }}
+      >
+        <div
+          className="mx-auto max-w-7xl"
+          style={{
+            display: 'flex',
+            flexDirection: 'column',
+            alignItems: 'center',
+            gap: 28,
+          }}
+        >
+          {/* Main Logo */}
+          <div
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: 10,
+            }}
+          >
+            <PiWebhooksLogoFill
+              size={36}
+              style={{ color: '#00ff85' }}
+            />
+            <span
+              style={{
+                fontFamily: "'JetBrains Mono', monospace",
+                fontSize: 20,
+                fontWeight: 700,
+                letterSpacing: '-0.5px',
+                color: '#eef0f6',
+              }}
+            >
+              Hook<span style={{ color: '#00ff85' }}>Lens</span>
+            </span>
+          </div>
+
+          {/* Navigation Links */}
+          <div style={{ display: 'flex', gap: 32, alignItems: 'center' }}>
+            {(mounted && user ? [
+              { name: 'Documentation', href: '/docs', external: false },
+              { name: 'Dashboard', href: '/dashboard', external: false },
+              { name: 'GitHub', href: 'https://github.com/siddreddy07/hooklens', external: true },
+            ] : [
+              { name: 'Documentation', href: '/docs', external: false },
+              { name: 'Sign In', href: '/login', external: false },
+              { name: 'GitHub', href: 'https://github.com/siddreddy07/hooklens', external: true },
+            ]).map((l) => (
+              l.external ? (
+                <a
+                  key={l.name}
+                  href={l.href}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  style={{ fontSize: 13, color: 'rgba(238,240,246,0.4)', textDecoration: 'none', transition: 'color 0.2s', fontFamily: "'JetBrains Mono', monospace" }}
+                  onMouseEnter={(e) => ((e.target as HTMLElement).style.color = '#00ff85')}
+                  onMouseLeave={(e) => ((e.target as HTMLElement).style.color = 'rgba(238,240,246,0.4)')}
+                >
+                  {l.name}
+                </a>
+              ) : (
+                <Link
+                  key={l.name}
+                  href={l.href}
+                  style={{ fontSize: 13, color: 'rgba(238,240,246,0.4)', textDecoration: 'none', transition: 'color 0.2s', fontFamily: "'JetBrains Mono', monospace" }}
+                  onMouseEnter={(e) => ((e.target as HTMLElement).style.color = '#00ff85')}
+                  onMouseLeave={(e) => ((e.target as HTMLElement).style.color = 'rgba(238,240,246,0.4)')}
+                >
+                  {l.name}
+                </Link>
+              )
+            ))}
+          </div>
+
+          {/* Divider */}
+          <div
+            style={{
+              width: '100%',
+              maxWidth: 400,
+              height: 1,
+              background: 'linear-gradient(90deg, transparent, rgba(0,255,133,0.3), transparent)',
+            }}
+          />
+
+          {/* Built for Community */}
+          <div
+            style={{
+              display: 'flex',
+              flexDirection: 'column',
+              alignItems: 'center',
+              gap: 8,
+            }}
+          >
+            <p
+              style={{
+                fontFamily: "'Syne', sans-serif",
+                fontSize: 14,
+                fontWeight: 600,
+                color: '#eef0f6',
+                letterSpacing: '-0.3px',
+              }}
+            >
               Built for the developer community
             </p>
+            <p
+              style={{
+                fontFamily: "'JetBrains Mono', monospace",
+                fontSize: 11,
+                color: 'rgba(238,240,246,0.25)',
+              }}
+            >
+              Crafted with ❤️ by Siddharth
+            </p>
+          </div>
+
+          {/* Version Badge */}
+          <div
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: 6,
+              marginTop: 4,
+            }}
+          >
+            <span
+              style={{
+                width: 6,
+                height: 6,
+                borderRadius: '50%',
+                background: '#00ff85',
+                boxShadow: '0 0 8px #00ff85',
+              }}
+            />
+            <span
+              style={{
+                fontFamily: "'JetBrains Mono', monospace",
+                fontSize: 10,
+                color: 'rgba(238,240,246,0.3)',
+                letterSpacing: '1px',
+              }}
+            >
+              v1.0.0
+            </span>
           </div>
         </div>
       </footer>
+
+      {/* ── GLOBAL STYLES ── */}
+      <style jsx global>{`
+        @import url('https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=JetBrains+Mono:wght@400;500;700&display=swap');
+
+        @keyframes pulse {
+          0%, 100% { box-shadow: 0 0 0 0 rgba(0, 255, 133, 0.5); }
+          50%       { box-shadow: 0 0 0 6px rgba(0, 255, 133, 0); }
+        }
+        @keyframes shimmer {
+          0%   { background-position: 0% center; }
+          100% { background-position: 200% center; }
+        }
+
+        html { scroll-behavior: smooth; }
+
+        ::-webkit-scrollbar { width: 6px; background: #060709; }
+        ::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.08); border-radius: 3px; }
+      `}</style>
     </div>
   )
 }

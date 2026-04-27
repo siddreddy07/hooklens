@@ -4,6 +4,7 @@ import Link from 'next/link'
 import { useState } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { Button } from '@/components/ui/button'
+import { DiNpm } from 'react-icons/di'
 import {
   Zap,
   Copy,
@@ -15,7 +16,6 @@ import {
   Monitor,
   Code2,
   Rocket,
-  Clock,
   Sparkles,
   Home
 } from 'lucide-react'
@@ -168,7 +168,7 @@ export default function DocsPage() {
                   />
                 )}
                 <Code2 size={18} className="relative z-10" />
-                <span className="relative z-10">Node.js SDK</span>
+                <span className="relative z-10">SDK</span>
               </button>
             </div>
           </div>
@@ -240,7 +240,7 @@ export default function DocsPage() {
                         1
                       </div>
                       <div>
-                        <h4 className="font-semibold">Sign in to HookLens</h4>
+                        <h4 className="font-semibold">Sign in to hooklens</h4>
                         <p className="text-sm text-muted-foreground">
                           Use the demo credentials or create your account
                         </p>
@@ -285,88 +285,109 @@ export default function DocsPage() {
                 animate={{ opacity: 1, y: 0 }}
                 exit={{ opacity: 0, y: -10 }}
                 transition={{ duration: 0.2 }}
-                className="relative"
               >
-                {/* Coming Soon Overlay */}
-                <div className="absolute inset-0 z-10 flex items-center justify-center rounded-3xl bg-background/60 backdrop-blur-sm">
-                  <div className="text-center">
-                    <div className="mx-auto mb-4 flex size-16 items-center justify-center rounded-2xl border border-primary/30 bg-primary/10">
-                      <Clock className="text-primary" size={32} />
-                    </div>
-                    <h3 className="mb-2 text-2xl font-bold">Coming Soon</h3>
-                    <p className="mx-auto max-w-sm text-muted-foreground">
-                      The Node.js SDK is currently in development.
-                      Will infrom when it launches.
-                    </p>
-                    <Button className="mt-6 gap-2" variant="ghost">
-                      We'll Let you know
-                      <ChevronRight size={16} />
-                    </Button>
-                  </div>
-                </div>
-
-                {/* Faded SDK Content */}
-                <div className="pointer-events-none select-none opacity-30">
+                {/* Node.js SDK Content */}
+                <div className="space-y-10">
                   {/* Installation */}
-                  <section className="mb-10">
+                  <section>
                     <h2 className="mb-4 flex items-center gap-3 text-2xl font-bold">
                       <Package className="text-primary" size={24} />
                       Installation
                     </h2>
                     <CodeBlock
                       filename="Terminal"
-                      code={`npm install hooklens`}
+                      code={`npm install hooklens-node`}
                     />
+                    <div className="mt-3 flex items-center gap-2">
+                      <span className="text-sm text-muted-foreground">View on</span>
+                      <a
+                        href="https://www.npmjs.com/package/hooklens-node"
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="flex items-center gap-1.5 text-sm text-primary hover:text-primary/80 transition-colors"
+                      >
+                        <DiNpm size={32} />
+                        npm
+                      </a>
+                    </div>
                   </section>
 
-                  {/* API Key */}
-                  <section className="mb-10">
+                  {/* Setup */}
+                  <section>
                     <h2 className="mb-4 flex items-center gap-3 text-2xl font-bold">
-                      <Key className="text-primary" size={24} />
-                      API Key
+                      <Zap className="text-primary" size={24} />
+                      Quick Setup
                     </h2>
 
                     <div className="mb-4 rounded-lg border border-amber-500/30 bg-amber-500/10 p-4">
                       <div className="flex items-start gap-3">
                         <AlertCircle size={20} className="mt-0.5 shrink-0 text-amber-500" />
-                        <p className="text-sm text-amber-200/80">
-                          <InlineCode>HOOK_LENS_API_KEY</InlineCode> is required.
-                        </p>
+                        <div className="text-sm text-amber-200/80">
+                          Get your API key and Project ID from the hooklens dashboard. Configure HOOKLENS_BASE_URL in your env for CORS.
+                          <br />
+                          <a href="https://v0-hooklens-webhook-debugger.vercel.app" target="_blank" rel="noopener noreferrer" className="underline hover:text-amber-100">Visit hooklens →</a>
+                        </div>
                       </div>
                     </div>
 
                     <CodeBlock
                       filename=".env"
-                      code={`HOOK_LENS_API_KEY=hlk_xxxxxxxxxxxxxxxxxxxx`}
+                      code={`HOOKLENS_API_KEY=hlk_your_api_key_here
+HOOKLENS_PROJECT_ID=your-project-id-here
+HOOKLENS_BASE_URL=https://v0-hooklens-webhook-debugger.vercel.app`}
                     />
                   </section>
 
-                  {/* Usage */}
-                  <section className="mb-10">
+                  {/* Basic Usage */}
+                  <section>
                     <h2 className="mb-4 flex items-center gap-3 text-2xl font-bold">
-                      <Zap className="text-primary" size={24} />
+                      <Code2 className="text-primary" size={24} />
                       Usage
                     </h2>
 
                     <CodeBlock
                       filename="server.js"
                       code={`import express from 'express'
-import { HookLens } from 'hooklens'
+import { hooklens } from 'hooklens-node'
 
 const app = express()
 
-const hooks = HookLens({
-  projectName: 'my-app',
-  provider: 'stripe'
-})
-
-app.use('/webhooks', hooks.capture())
+app.use('/webhooks/{provider}', hooklens({ provider: '{provider}' }))
 
 app.listen(3000)`}
                     />
                   </section>
 
-                  {/* Providers */}
+{/* CORS Setup */}
+                  <section>
+                    <h2 className="mb-4 flex items-center gap-3 text-2xl font-bold">
+                      <Code2 className="text-primary" size={24} />
+                      CORS Setup
+                    </h2>
+                    <p className="mb-4 text-muted-foreground">
+                      Add the hooklens origin to your CORS to enable webhook replay:
+                    </p>
+
+                    <CodeBlock
+                      filename="server.js"
+                      code={`import express from 'express'
+import cors from 'cors'
+
+const app = express()
+
+app.use(cors({
+  origin: process.env.HOOKLENS_BASE_URL,
+  credentials: true
+}))
+
+app.use(express.json())
+app.use('/webhooks/{provider}', hooklens({ provider: '{provider}' }))
+
+app.listen(3000)`}
+                    />
+                  </section>
+
+                  {/* Supported Providers */}
                   <section>
                     <h3 className="mb-4 text-xl font-semibold">Supported Providers</h3>
                     <div className="flex flex-wrap gap-2">
@@ -387,11 +408,19 @@ app.listen(3000)`}
 
           {/* Footer */}
           <div className="mt-16 flex items-center justify-between border-t border-border pt-8">
-            <p className="text-sm text-muted-foreground">
-              Need help? Contact support@hooklens.dev
-            </p>
+    <p className="text-sm text-muted-foreground">
+  Need help? Open an issue on{" "}
+  <a
+    href="https://github.com/siddreddy07/hooklens"
+    target="_blank"
+    rel="noopener noreferrer"
+    className="underline hover:text-foreground"
+  >
+    GitHub
+  </a>
+</p>
             <Link href="/dashboard">
-              <Button size="sm" variant="outline" className="gap-2">
+              <Button size="sm" variant="outline" className="gap-2 hover:text-[#36f556] border-2 hover:border-green-600 cursor-pointer">
                 Go to Dashboard
                 <ChevronRight size={14} />
               </Button>

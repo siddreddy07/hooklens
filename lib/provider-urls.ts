@@ -1,46 +1,71 @@
-import type { Provider } from './mock-data'
+'use client'
 
-const STORAGE_KEY = 'hooklens_provider_urls'
+import { createClient } from '@/lib/supabase/client'
+import type { Provider } from './mock-data'
 
 export type ProviderUrls = Record<Provider, string>
 
-const defaultUrls: ProviderUrls = {
-  stripe: '',
-  github: '',
-  slack: '',
-  notion: '',
-  meta: '',
-  linear: '',
-  shopify: '',
-  custom: '',
-}
-
-export function getProviderUrls(): ProviderUrls {
-  if (typeof window === 'undefined') return defaultUrls
-  
-  try {
-    const stored = localStorage.getItem(STORAGE_KEY)
-    if (stored) {
-      return { ...defaultUrls, ...JSON.parse(stored) }
-    }
-  } catch {
-    // Ignore parse errors
+export async function getProviderUrls(): Promise<ProviderUrls> {
+  const supabase = createClient()
+  const defaultUrls: ProviderUrls = {
+    stripe: '',
+    github: '',
+    slack: '',
+    notion: '',
+    meta: '',
+    linear: '',
+    shopify: '',
+    custom: '',
   }
-  
-  return defaultUrls
+
+  try {
+    const { data: { user } } = await supabase.auth.getUser()
+    if (!user) return defaultUrls
+
+    const { data, error } = await supabase
+      .from('provider_urls')
+      .select('provider, url')
+      .eq('user_id', user.id)
+
+    if (error || !data) return defaultUrls
+
+    const urls: ProviderUrls = { ...defaultUrls }
+    data.forEach((row: { provider: Provider; url: string }) => {
+      if (row.provider && row.url) {
+        urls[row.provider] = row.url
+      }
+    })
+
+    return urls
+  } catch {
+    return defaultUrls
+  }
 }
 
-export function getProviderUrl(provider: Provider): string {
-  const urls = getProviderUrls()
+export async function getProviderUrl(provider: Provider): Promise<string> {
+  const urls = await getProviderUrls()
   return urls[provider] || ''
 }
 
-export function setProviderUrl(provider: Provider, url: string): void {
-  if (typeof window === 'undefined') return
-  
-  const urls = getProviderUrls()
-  urls[provider] = url
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(urls))
+export async function setProviderUrl(provider: Provider, url: string): Promise<void> {
+  const supabase = createClient()
+
+  try {
+    const { data: { user } } = await supabase.auth.getUser()
+    if (!user) return
+
+    await supabase
+      .from('provider_urls')
+      .upsert({
+        user_id: user.id,
+        provider,
+        url,
+      }, {
+        onConflict: 'user_id,provider',
+      })
+  } catch {
+    // Silently fail
+  }
 }
 
 export function getAllProviders(): Provider[] {

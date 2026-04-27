@@ -18,6 +18,7 @@ import {
   BreadcrumbSeparator,
 } from '@/components/ui/breadcrumb'
 import { cn } from '@/lib/utils'
+import { Spinner } from '@/components/ui/spinner'
 
 interface ProviderCardProps {
   provider: Provider
@@ -36,7 +37,7 @@ function ProviderCard({ provider, url, onSave }: ProviderCardProps) {
   
   const handleSave = async () => {
     setSaving(true)
-    await new Promise(resolve => setTimeout(resolve, 500))
+    await setProviderUrl(provider, value)
     onSave(provider, value)
     setSaving(false)
     setSaved(true)
@@ -100,7 +101,7 @@ function ProviderCard({ provider, url, onSave }: ProviderCardProps) {
           className="min-w-[60px]"
         >
           {saving ? (
-            <div className="size-4 animate-spin rounded-full border-2 border-white border-t-transparent" />
+            <Spinner size="sm" />
           ) : (
             'Save'
           )}
@@ -121,17 +122,30 @@ export default function ProvidersPage() {
     shopify: '',
     custom: '',
   })
+  const [loading, setLoading] = useState(true)
   
   useEffect(() => {
-    setUrls(getProviderUrls())
+    const loadUrls = async () => {
+      const fetchedUrls = await getProviderUrls()
+      setUrls(fetchedUrls)
+      setLoading(false)
+    }
+    loadUrls()
   }, [])
   
   const handleSave = (provider: Provider, url: string) => {
-    setProviderUrl(provider, url)
     setUrls(prev => ({ ...prev, [provider]: url }))
   }
   
   const configuredCount = Object.values(urls).filter(url => url.length > 0).length
+
+  if (loading) {
+    return (
+      <div className="flex min-h-[50vh] items-center justify-center">
+        <Spinner size="lg" />
+      </div>
+    )
+  }
   
   return (
     <div className="mx-auto max-w-4xl">
@@ -162,10 +176,10 @@ export default function ProvidersPage() {
         <div className="mb-8">
           <h1 className="text-2xl font-semibold">Provider Webhook URLs</h1>
           <p className="mt-1 text-muted-foreground">
-            Configure where HookLens should replay events for each provider.
+            Configure where hooklens should replay events for each provider.
             {configuredCount > 0 && (
               <span className="ml-1 text-emerald-400">
-                {configuredCount} of {getAllProviders().length} configured
+                 — {configuredCount} of {getAllProviders().length} configured
               </span>
             )}
           </p>
