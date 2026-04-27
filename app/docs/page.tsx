@@ -325,7 +325,7 @@ export default function DocsPage() {
                         <div className="text-sm text-amber-200/80">
                           Get your API key and Project ID from the hooklens dashboard. Configure HOOKLENS_BASE_URL in your env for CORS.
                           <br />
-                          <a href="https://v0-hooklens-webhook-debugger.vercel.app" target="_blank" rel="noopener noreferrer" className="underline hover:text-amber-100">Visit hooklens →</a>
+                          <a href="https://hooklens-eta.vercel.app" target="_blank" rel="noopener noreferrer" className="underline hover:text-amber-100">Visit hooklens →</a>
                         </div>
                       </div>
                     </div>
@@ -334,7 +334,7 @@ export default function DocsPage() {
                       filename=".env"
                       code={`HOOKLENS_API_KEY=hlk_your_api_key_here
 HOOKLENS_PROJECT_ID=your-project-id-here
-HOOKLENS_BASE_URL=https://v0-hooklens-webhook-debugger.vercel.app`}
+HOOKLENS_BASE_URL=https://hooklens-eta.vercel.app`}
                     />
                   </section>
 
