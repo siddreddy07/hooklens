@@ -33,8 +33,8 @@ interface ProviderBadgeProps {
 }
 
 export function ProviderBadge({ provider, className, showLabel = true, size = 'md' }: ProviderBadgeProps) {
-  const colors = providerColors[provider]
-  const Icon = providerIcons[provider]
+  const colors = providerColors[provider] || providerColors.custom
+  const Icon = providerIcons[provider] || Webhook
   
   const iconSize = size === 'sm' ? 12 : 14
   
@@ -56,8 +56,8 @@ export function ProviderBadge({ provider, className, showLabel = true, size = 'm
 }
 
 export function ProviderIcon({ provider, className }: { provider: Provider; className?: string }) {
-  const Icon = providerIcons[provider]
-  const colors = providerColors[provider]
+  const Icon = providerIcons[provider] || Webhook
+  const colors = providerColors[provider] || providerColors.custom
   
   return <Icon className={cn('size-5', colors.text, className)} />
 }
