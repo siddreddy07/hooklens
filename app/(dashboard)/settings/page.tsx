@@ -178,7 +178,7 @@ export default function SettingsPage() {
   }
 
   return (
-    <div className="mx-auto max-w-2xl">
+     <div className="mx-auto max-w-2xl px-4 sm:px-0">
       <Breadcrumb className="mb-6">
         <BreadcrumbList>
           <BreadcrumbItem>
@@ -231,7 +231,7 @@ export default function SettingsPage() {
             </div>
           ) : apiKey ? (
             <div className="space-y-4">
-              <div className="flex items-center gap-2">
+              <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
                 <Input
                   value={apiKey.api_key}
                   readOnly
@@ -246,9 +246,8 @@ export default function SettingsPage() {
                 </Button>
               </div>
 
-              <div className="flex items-center justify-between text-sm text-muted-foreground">
+              <div className="text-sm text-muted-foreground">
                 <span>Created: {formatDate(apiKey.created_at)}</span>
-                <span>Last used: {formatDate(apiKey.last_used_at)}</span>
               </div>
 
               <div className="flex items-center justify-between rounded-lg border border-amber-500/20 bg-amber-500/10 p-3">
@@ -260,7 +259,7 @@ export default function SettingsPage() {
                 </div>
               </div>
 
-              <div className="flex gap-3">
+               <div className="flex flex-col gap-3 sm:flex-row">
                 <Button
                   onClick={generateApiKey}
                   disabled={creating}
@@ -328,8 +327,8 @@ export default function SettingsPage() {
             </div>
           </div>
 
-          <div className="space-y-4">
-            <div className="flex items-center gap-2">
+           <div className="space-y-4">
+             <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
               <div className="relative flex-1">
                 <Input
                   type={showGroqKey ? 'text' : 'password'}
@@ -389,29 +388,7 @@ export default function SettingsPage() {
           </div>
         </div>
 
-        {/* Usage Instructions */}
-        <div className="mt-6 rounded-lg border border-border bg-card p-6">
-          <h2 className="mb-4 font-medium">How to Use</h2>
-          <div className="space-y-3 text-sm text-muted-foreground">
-            <p>Send webhook requests to your capture endpoint:</p>
-            <div className="rounded-lg bg-muted p-3 font-mono text-xs">
-              <p>POST /api/capture</p>
-              <p>Content-Type: application/json</p>
-              <p>x-api-key: {apiKey?.api_key || 'your_api_key'}</p>
-            </div>
-            <p>Example with fetch:</p>
-            <div className="rounded-lg bg-muted p-3 font-mono text-xs">
-              <p>{`fetch('/api/capture', {`}</p>
-              <p>&nbsp;&nbsp;method: 'POST',</p>
-              <p>&nbsp;&nbsp;headers: {'{'}</p>
-              <p>&nbsp;&nbsp;&nbsp;&nbsp;'Content-Type': 'application/json',</p>
-              <p>&nbsp;&nbsp;&nbsp;&nbsp;'x-api-key': '{apiKey?.api_key || 'your_api_key'}'</p>
-              <p>&nbsp;&nbsp;{'}'},</p>
-              <p>&nbsp;&nbsp;body: JSON.stringify(data)</p>
-              <p>{`})`}</p>
-            </div>
-          </div>
-        </div>
+
       </motion.div>
     </div>
   )

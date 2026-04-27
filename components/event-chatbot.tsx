@@ -169,7 +169,7 @@ Accuracy > creativity. Always.
       if (!res.ok) {
         const err = await res.json()
         if (err.code === 'USAGE_LIMIT_REACHED') {
-          throw new Error('Free AI usage (3 requests) exhausted. Add your Groq API key in Settings to continue.')
+          throw new Error('Free AI usage (10 requests) exhausted. Add your Groq API key in Settings to continue.')
         }
         throw new Error(err.error || 'Failed to get response')
       }
@@ -197,15 +197,15 @@ Accuracy > creativity. Always.
         }])
       }
     } catch (error) {
-      const isUsageLimit = error instanceof Error && 
-        (error.message.includes('USAGE_LIMIT_REACHED') || error.message.includes('3 requests'))
+      const isUsageLimit = error instanceof Error &&
+        (error.message.includes('USAGE_LIMIT_REACHED') || error.message.includes('10 requests'))
 
       setMessages(prev => [...prev, {
         id: Date.now().toString(),
         role: 'assistant',
         content: isUsageLimit 
           ? `<div class="text-sm">
-              <p class="mb-3 text-zinc-300">Free AI usage (3 requests) exhausted.</p>
+              <p class="mb-3 text-zinc-300">Free AI usage (10 requests) exhausted.</p>
               <a href="/settings" class="inline-flex items-center gap-2 px-3 py-2 bg-primary text-primary-foreground rounded-lg text-sm font-medium hover:bg-primary/90 transition-colors">
                 Add Groq API Key in Settings
                 <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12h14M12 5l7 7-7 7"/></svg>

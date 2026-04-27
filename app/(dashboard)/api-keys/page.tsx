@@ -239,11 +239,8 @@ export default function ApiKeysPage() {
             </div>
 
             {/* Metadata */}
-            <div className="mb-6 space-y-2 text-sm text-muted-foreground">
+            <div className="mb-6 text-sm text-muted-foreground">
               <p>Created: {formatDate(apiKey.created_at)}</p>
-              {apiKey.last_used_at && (
-                <p>Last used: {formatDate(apiKey.last_used_at)}</p>
-              )}
             </div>
 
             {/* Delete button */}
