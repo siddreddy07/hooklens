@@ -316,7 +316,7 @@ setLoading(true)
                   {events.map((event) => (
                     <tr 
                       key={event.id} 
-                      className="transition-colors cursor-pointer"
+                      className="transition-colors cursor-pointer hover:bg-emerald-500/50"
                       onClick={() => router.push(`/event/${event.id}`)}
                     >
                       <td className="px-4 py-3 text-sm font-mono">{event.id}</td>

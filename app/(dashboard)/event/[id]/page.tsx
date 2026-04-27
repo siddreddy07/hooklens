@@ -378,7 +378,7 @@ export default function EventDetailPage({ params }: { params: Promise<{ id: stri
             )}
 
             <p className="mt-2 text-xs text-muted-foreground">
-              This URL is used for all {providerName} event replays across your workspace
+              Add your backend's complete webhook URL here. Make sure to enable CORS in your backend to allow replayed events.
             </p>
           </section>
 
