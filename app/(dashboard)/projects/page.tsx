@@ -43,7 +43,9 @@ import {
   XCircle,
   Home,
   Loader2,
-  AlertTriangle
+  AlertTriangle,
+  Copy,
+  Check
 } from 'lucide-react'
 import {
   Breadcrumb,
@@ -93,6 +95,7 @@ export default function ProjectsPage() {
   const [selectedColor, setSelectedColor] = useState('blue')
   const [saving, setSaving] = useState(false)
   const [deleting, setDeleting] = useState<string | null>(null)
+  const [copiedId, setCopiedId] = useState<string | null>(null)
 
   useEffect(() => {
     fetchProjects()
@@ -210,6 +213,12 @@ export default function ProjectsPage() {
     setNewProjectName('')
     setNewProjectDescription('')
     setSelectedColor('blue')
+  }
+
+  async function copyProjectId(projectId: string) {
+    await navigator.clipboard.writeText(projectId)
+    setCopiedId(projectId)
+    setTimeout(() => setCopiedId(null), 2000)
   }
 
   return (
@@ -346,6 +355,21 @@ export default function ProjectsPage() {
                         <div>
                           <h3 className="font-medium">{project.name}</h3>
                           <p className="text-xs text-muted-foreground">{project.slug}</p>
+                        </div>
+                        
+                        <div className="flex items-center gap-1">
+                          <button
+                            onClick={() => copyProjectId(project.id)}
+                            className="flex items-center gap-1 rounded-md bg-muted/50 px-2 py-1 text-xs text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
+                            title="Copy project ID"
+                          >
+                            {copiedId === project.id ? (
+                              <Check size={12} className="text-emerald-500" />
+                            ) : (
+                              <Copy size={12} />
+                            )}
+                            <span className="max-w-[60px] truncate">{project.id}</span>
+                          </button>
                         </div>
                       </div>
                       

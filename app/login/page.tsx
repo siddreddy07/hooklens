@@ -9,7 +9,7 @@ import { hooklensLogo } from '@/components/logo'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
-import { Mail, Lock, ArrowRight, Loader2 } from 'lucide-react'
+import { Mail, Lock, ArrowRight, Loader2, User } from 'lucide-react'
 
 export default function LoginPage() {
   const router = useRouter()
@@ -52,6 +52,11 @@ export default function LoginPage() {
     } finally {
       setLoading(false)
     }
+  }
+
+  const fillDemoCredentials = () => {
+    setEmail('hrxsiddharth@gmail.com')
+    setPassword('hritikroshan')
   }
 
   return (
@@ -160,6 +165,23 @@ export default function LoginPage() {
               {isSignUp ? 'Sign in' : 'Sign up'}
             </button>
           </p>
+
+          {/* Demo credentials */}
+          {!isSignUp && (
+            <div className="mt-4 rounded-lg border border-green-400 text-white hover:text-white p-3">
+              <p className="mb-2 text-center text-sm">
+                Want to try it out first?
+              </p>
+              <Button
+                type="button"
+                className="w-full hover:text-white border-2 bg-green-600 border-green-400 cursor-pointer gap-2"
+                onClick={fillDemoCredentials}
+              >
+                <User size={16} />
+                <p className='hover:text-white'>Use Demo Account</p>
+              </Button>
+            </div>
+          )}
         </div>
 
         {/* Back to home */}

@@ -68,8 +68,8 @@ export function AppSidebar() {
       <Link href="/" className="flex h-16 items-center gap-2 border-b border-border px-6 transition-opacity hover:opacity-80">
         <HookLensLogo />
         <span className="font-mono text-lg font-bold tracking-tight">
-          <span className="text-foreground">hook</span>
-          <span className="text-primary">lens</span>
+          <span className="text-foreground">Hook</span>
+          <span className="text-primary">Lens</span>
         </span>
       </Link>
       
