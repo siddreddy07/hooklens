@@ -39,25 +39,25 @@ function CodeBlock({ code, filename }: { code: string; filename?: string }) {
 
   return (
     <div className="group relative overflow-hidden rounded-xl border border-border bg-[#0d1117]">
-      {filename && (
-        <div className="flex items-center justify-between border-b border-border/50 bg-[#161b22] px-4 py-2">
-          <div className="flex items-center gap-2">
-            <div className="size-3 rounded-full bg-red-500/80" />
-            <div className="size-3 rounded-full bg-yellow-500/80" />
-            <div className="size-3 rounded-full bg-green-500/80" />
-            <span className="ml-2 text-xs text-muted-foreground">{filename}</span>
-          </div>
-          <button
-            onClick={handleCopy}
-            className="flex items-center gap-1.5 rounded-md px-2 py-1 text-xs text-muted-foreground opacity-0 transition-opacity hover:text-foreground group-hover:opacity-100"
-          >
-            {copied ? <Check size={14} /> : <Copy size={14} />}
-            {copied ? 'Copied!' : 'Copy'}
-          </button>
+      <div className="flex items-center justify-between border-b border-border/50 bg-[#161b22] px-3 py-2 max-sm:px-2 max-sm:py-1.5">
+        <div className="flex items-center gap-2 max-sm:gap-1.5">
+          <div className="size-2.5 rounded-full bg-red-500/80 max-sm:size-2" />
+          <div className="size-2.5 rounded-full bg-yellow-500/80 max-sm:size-2" />
+          <div className="size-2.5 rounded-full bg-green-500/80 max-sm:size-2" />
+          {filename && (
+            <span className="ml-2 text-xs text-muted-foreground max-sm:hidden">{filename}</span>
+          )}
         </div>
-      )}
-      <pre className="overflow-x-auto p-4">
-        <code className="text-[13px] leading-relaxed text-gray-300">{code}</code>
+        <button
+          onClick={handleCopy}
+          className="flex items-center gap-1.5 rounded-md px-2 py-1 text-xs text-muted-foreground hover:text-foreground max-sm:px-1.5 max-sm:py-0.5"
+        >
+          {copied ? <Check size={12} /> : <Copy size={12} />}
+          <span className="max-sm:hidden">{copied ? 'Copied!' : 'Copy'}</span>
+        </button>
+      </div>
+      <pre className="overflow-x-auto p-4 max-sm:p-3">
+        <code className="text-[13px] leading-relaxed text-gray-300 max-sm:text-[11px]">{code}</code>
       </pre>
     </div>
   )

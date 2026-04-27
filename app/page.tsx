@@ -24,6 +24,7 @@ import {
 import { useRef, useState, useEffect } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import { PiWebhooksLogoFill } from 'react-icons/pi'
+import { Menu, X } from 'lucide-react'
 
 // ─── DATA ───────────────────────────────────────────────────────────────────
 
@@ -116,6 +117,7 @@ export default function LandingPage() {
   const [hasScrolled, setHasScrolled] = useState(false)
   const [user, setUser] = useState<{ email: string } | null>(null)
   const [mounted, setMounted] = useState(false)
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
 
   const { scrollYProgress } = useScroll({
     target: heroRef,
@@ -154,13 +156,14 @@ fetchUser()
       <motion.header
         className="fixed left-0 right-0 top-0 z-50"
         style={{
+          height: hasScrolled ? 56 : 68,
           background: hasScrolled ? 'rgba(6,7,9,0.85)' : 'transparent',
           backdropFilter: hasScrolled ? 'blur(16px)' : 'none',
           borderBottom: hasScrolled ? '1px solid rgba(255,255,255,0.05)' : '1px solid transparent',
-          transition: 'background 0.3s, border-color 0.3s',
+          transition: 'all 0.3s',
         }}
       >
-        <div className="mx-auto flex h-[68px] max-w-7xl items-center justify-between px-6">
+        <div className="mx-auto flex h-full max-w-7xl items-center justify-between px-6">
           {/* Logo */}
           <Link href="/" className="flex items-center gap-2.5">
             <PiWebhooksLogoFill
@@ -180,7 +183,7 @@ fetchUser()
           </Link>
 
           {/* Links */}
-          <nav className="hidden items-center gap-8 md:flex">
+          <nav className="hidden md:flex items-center gap-8">
             {['Documentation', 'Features', 'Integration'].map((l) => (
               <Link
                 key={l}
@@ -200,8 +203,8 @@ fetchUser()
           </nav>
 
           {/* CTA */}
-          <div className="flex items-center gap-3">
-            {mounted && !user && (
+          <div className="hidden md:flex items-center gap-3">
+            {!user && (
               <Link href="/docs">
                 <Button
                   variant="ghost"
@@ -214,7 +217,7 @@ fetchUser()
                 </Button>
               </Link>
             )}
-            {mounted && user ? (
+            {user ? (
               <Link href="/dashboard">
                 <button
                   style={{
@@ -289,42 +292,8 @@ fetchUser()
       <motion.section
         ref={heroRef}
         style={{ opacity: heroOpacity, y: heroY }}
-        className="relative z-10 flex min-h-screen flex-col items-center justify-center px-6 pb-20 pt-28 text-center"
+className="relative z-10 flex min-h-screen flex-col items-center justify-center px-6 pb-20 pt-28 text-center landing-hero-pt"
       >
-        {/* Badge */}
-        <motion.div
-          initial={{ opacity: 0, y: 16 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.6, delay: 0.1 }}
-          style={{
-            display: 'inline-flex',
-            alignItems: 'center',
-            gap: 8,
-            background: 'rgba(0,255,133,0.07)',
-            border: '1px solid rgba(0,255,133,0.2)',
-            borderRadius: 100,
-            padding: '5px 16px',
-            marginBottom: 36,
-            fontFamily: "'JetBrains Mono', monospace",
-            fontSize: 12,
-            color: '#00ff85',
-            letterSpacing: '0.3px',
-          }}
-        >
-          <span
-            style={{
-              width: 6,
-              height: 6,
-              borderRadius: '50%',
-              background: '#00ff85',
-              display: 'inline-block',
-              boxShadow: '0 0 8px #00ff85',
-              animation: 'pulse 2s infinite',
-            }}
-          />
-          Now supporting 50+ webhook providers
-        </motion.div>
-
         {/* Heading */}
         <motion.h1
           initial={{ opacity: 0, y: 24 }}
@@ -361,6 +330,7 @@ fetchUser()
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.7, delay: 0.3 }}
+          className="landing-hero-subtitle"
           style={{
             fontSize: 18,
             color: 'rgba(238,240,246,0.5)',
@@ -381,9 +351,10 @@ fetchUser()
           initial={{ opacity: 0, y: 16 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.6, delay: 0.4 }}
+          className="landing-cta-row"
           style={{ display: 'flex', gap: 12, alignItems: 'center', flexWrap: 'wrap', justifyContent: 'center', marginBottom: 64 }}
         >
-          {mounted && user ? (
+          {user ? (
             <Link href="/dashboard">
               <button
                 style={{
@@ -506,6 +477,7 @@ fetchUser()
             Works with your stack
           </p>
           <div
+            className="landing-provider-gap"
             style={{
               display: 'flex',
               flexWrap: 'wrap',
@@ -540,7 +512,7 @@ fetchUser()
       </section>
 
       {/* ── FEATURES ── */}
-      <section id="features" className="relative z-10 px-6 py-28">
+      <section id="features" className="relative z-10 px-6 py-28 landing-section-py">
         <div className="mx-auto max-w-7xl">
           <motion.div
             initial={{ opacity: 0, y: 20 }}
@@ -582,9 +554,10 @@ fetchUser()
 
           {/* 3-col grid with shared borders */}
           <div
+            className="landing-features-grid"
             style={{
               display: 'grid',
-              gridTemplateColumns: 'repeat(3, 1fr)',
+              gridTemplateColumns: '1fr',
               gap: 1,
               background: 'rgba(255,255,255,0.05)',
               border: '1px solid rgba(255,255,255,0.05)',
@@ -599,7 +572,7 @@ fetchUser()
                 whileInView={{ opacity: 1, y: 0 }}
                 viewport={{ once: true }}
                 transition={{ delay: i * 0.07 }}
-                className="group"
+                className="group landing-features-card-p"
                 style={{
                   background: '#0a0c10',
                   padding: '36px 32px',
@@ -680,14 +653,14 @@ fetchUser()
       {/* ── INTEGRATION ── */}
       <section
         id="integration"
-        className="relative z-10 px-6 py-28"
+        className="relative z-10 px-6 py-28 landing-section-py"
         style={{
           borderTop: '1px solid rgba(255,255,255,0.05)',
           borderBottom: '1px solid rgba(255,255,255,0.05)',
           background: 'rgba(255,255,255,0.01)',
         }}
       >
-        <div className="mx-auto grid max-w-6xl items-center gap-16 lg:grid-cols-2">
+        <div className="mx-auto grid max-w-6xl items-center gap-16 lg:grid-cols-2 landing-integration-grid landing-integration-grid-gap">
           {/* Left copy */}
           <motion.div
             initial={{ opacity: 0, x: -24 }}
@@ -727,11 +700,10 @@ fetchUser()
               <span style={{ color: '#00ff85' }}>in 2 minutes.</span>
             </h2>
             <p
-              style={{ fontSize: 16, color: 'rgba(238,240,246,0.45)', lineHeight: 1.75, marginBottom: 32 }}
+              style={{ fontSize: 16, color: 'rgba(238,240,246,0.45)', lineHeight: 1.75, marginBottom: 28 }}
             >
-              Install our lightweight middleware package, add a single line of code, and start
-              capturing webhooks instantly. Works with Express, Next.js, Fastify, and any Node.js
-              framework.
+              Install HookLens in your app with just one line of code. Start capturing
+              webhooks instantly.
             </p>
 
             {/* Steps */}
@@ -802,7 +774,10 @@ fetchUser()
                   View Docs <ChevronRight size={15} />
                 </button>
               </Link>
-              <button
+              <a
+                href="https://github.com/siddreddy07/hooklens"
+                target="_blank"
+                rel="noopener noreferrer"
                 style={{
                   background: 'transparent',
                   color: 'rgba(238,240,246,0.6)',
@@ -817,10 +792,11 @@ fetchUser()
                   gap: 7,
                   fontFamily: 'inherit',
                   transition: 'all 0.2s',
+                  textDecoration: 'none',
                 }}
               >
                 <Github size={15} /> GitHub
-              </button>
+              </a>
             </div>
           </motion.div>
 
@@ -878,11 +854,12 @@ fetchUser()
 
               {/* Code */}
               <pre
+                className="code-block"
                 style={{
-                  padding: '24px 22px',
+                  padding: '20px 18px',
                   fontFamily: "'JetBrains Mono', monospace",
-                  fontSize: 13,
-                  lineHeight: 1.8,
+                  fontSize: 12,
+                  lineHeight: 1.7,
                   overflowX: 'auto',
                   margin: 0,
                 }}
@@ -960,7 +937,7 @@ fetchUser()
       </section>
 
       {/* ── CTA ── */}
-      <section className="relative z-10 px-6 py-32 text-center">
+      <section className="relative z-10 px-6 py-32 text-center landing-section-py">
         <div
           style={{
             position: 'absolute',
@@ -1010,7 +987,7 @@ fetchUser()
           <div
             style={{ display: 'flex', gap: 12, justifyContent: 'center', flexWrap: 'wrap', marginBottom: 24 }}
           >
-            {mounted && user ? (
+            {user ? (
               <Link href="/dashboard">
                 <button
                   style={{
@@ -1156,7 +1133,7 @@ fetchUser()
 
           {/* Navigation Links */}
           <div style={{ display: 'flex', gap: 32, alignItems: 'center' }}>
-            {(mounted && user ? [
+            {(user ? [
               { name: 'Documentation', href: '/docs', external: false },
               { name: 'Dashboard', href: '/dashboard', external: false },
               { name: 'GitHub', href: 'https://github.com/siddreddy07/hooklens', external: true },

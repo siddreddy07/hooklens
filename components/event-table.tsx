@@ -23,16 +23,16 @@ export function EventTable({ events }: EventTableProps) {
   const router = useRouter()
   
   return (
-    <div className="rounded-lg border border-border bg-card">
-      <Table>
+    <div className="w-full overflow-x-auto rounded-lg border border-border bg-card">
+      <Table className="min-w-[600px]">
         <TableHeader>
           <TableRow className="hover:bg-transparent">
-            <TableHead className="w-[140px]">Timestamp</TableHead>
-            <TableHead className="w-[120px]">Provider</TableHead>
-            <TableHead>Event Type</TableHead>
-            <TableHead className="w-[100px]">Status</TableHead>
-            <TableHead className="max-w-[300px]">AI Summary</TableHead>
-            <TableHead className="w-[60px]"></TableHead>
+            <TableHead className="w-[100px] whitespace-nowrap">Time</TableHead>
+            <TableHead className="w-[80px] whitespace-nowrap">Provider</TableHead>
+            <TableHead className="whitespace-nowrap">Event</TableHead>
+            <TableHead className="w-[80px] whitespace-nowrap">Status</TableHead>
+            <TableHead className="min-w-[150px] whitespace-nowrap">AI Summary</TableHead>
+            <TableHead className="w-[40px]"></TableHead>
           </TableRow>
         </TableHeader>
         <TableBody>
@@ -42,7 +42,7 @@ export function EventTable({ events }: EventTableProps) {
               className="cursor-pointer transition-colors hover:bg-accent/50"
               onClick={() => router.push(`/event/${event.id}`)}
             >
-              <TableCell className="text-sm text-muted-foreground">
+              <TableCell className="text-sm text-muted-foreground whitespace-nowrap">
                 {formatDistanceToNow(new Date(event.created_at), { addSuffix: true })}
               </TableCell>
               <TableCell>
@@ -64,7 +64,7 @@ export function EventTable({ events }: EventTableProps) {
                   )}
                 </div>
               </TableCell>
-              <TableCell className="max-w-[300px]">
+              <TableCell className="max-w-[200px]">
                 <p className="truncate text-sm text-muted-foreground">
                   {event.ai_summary}
                 </p>

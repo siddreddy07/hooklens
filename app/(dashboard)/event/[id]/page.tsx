@@ -269,13 +269,13 @@ export default function EventDetailPage({ params }: { params: Promise<{ id: stri
         transition={{ duration: 0.3 }}
       >
         {/* Breadcrumb */}
-        <Breadcrumb className="mb-6">
+        <Breadcrumb className="mb-6 overflow-x-auto">
           <BreadcrumbList>
             <BreadcrumbItem>
               <BreadcrumbLink asChild>
-                <Link href="/" className="flex items-center gap-1.5">
+                <Link href="/" className="flex items-center gap-1">
                   <Home size={14} />
-                  Home
+                  <span className="hidden sm:inline">Home</span>
                 </Link>
               </BreadcrumbLink>
             </BreadcrumbItem>

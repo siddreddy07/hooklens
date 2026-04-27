@@ -182,13 +182,13 @@ setLoading(true)
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.3 }}
       >
-        <Breadcrumb className="mb-6">
+        <Breadcrumb className="mb-6 overflow-x-auto">
           <BreadcrumbList>
             <BreadcrumbItem>
               <BreadcrumbLink asChild>
-                <Link href="/" className="flex items-center gap-1.5">
+                <Link href="/" className="flex items-center gap-1">
                   <Home size={14} />
-                  Home
+                  <span className="hidden sm:inline">Home</span>
                 </Link>
               </BreadcrumbLink>
             </BreadcrumbItem>
@@ -301,15 +301,15 @@ setLoading(true)
           </div>
         ) : events.length > 0 ? (
           <>
-            <div className="rounded-lg border border-border overflow-hidden">
-              <table className="w-full">
-                <thead className="bg-muted/50">
+            <div className="rounded-lg border border-border overflow-x-auto">
+              <table className="w-full min-w-[600px]">
+                <thead className="bg-muted/50 sticky top-0">
                   <tr>
-                    <th className="px-4 py-3 text-left text-xs font-medium text-muted-foreground">ID</th>
-                    <th className="px-4 py-3 text-left text-xs font-medium text-muted-foreground">Provider</th>
-                    <th className="px-4 py-3 text-left text-xs font-medium text-muted-foreground">Method</th>
-                    <th className="px-4 py-3 text-left text-xs font-medium text-muted-foreground">URL</th>
-                    <th className="px-4 py-3 text-left text-xs font-medium text-muted-foreground">Created</th>
+                    <th className="px-3 py-2.5 text-left text-xs font-medium text-muted-foreground whitespace-nowrap">ID</th>
+                    <th className="px-3 py-2.5 text-left text-xs font-medium text-muted-foreground whitespace-nowrap">Provider</th>
+                    <th className="px-3 py-2.5 text-left text-xs font-medium text-muted-foreground whitespace-nowrap">Method</th>
+                    <th className="px-3 py-2.5 text-left text-xs font-medium text-muted-foreground">URL</th>
+                    <th className="px-3 py-2.5 text-left text-xs font-medium text-muted-foreground whitespace-nowrap">Created</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-border">
@@ -319,13 +319,13 @@ setLoading(true)
                       className="transition-colors cursor-pointer hover:bg-emerald-500/50"
                       onClick={() => router.push(`/event/${event.id}`)}
                     >
-                      <td className="px-4 py-3 text-sm font-mono">{event.id}</td>
-                      <td className="px-4 py-3 text-sm">
-                        <span className="rounded-full bg-primary/10 px-2 py-1 text-xs capitalize">
+                      <td className="px-3 py-2.5 text-xs font-mono max-w-[80px] truncate">{event.id}</td>
+                      <td className="px-3 py-2.5 text-xs">
+                        <span className="rounded-full bg-primary/10 px-1.5 py-0.5 text-xs capitalize">
                           {event.provider || 'unknown'}
                         </span>
                       </td>
-                      <td className="px-4 py-3 text-sm">
+                      <td className="px-3 py-2.5 text-xs">
                         <span className={`font-mono ${
                           event.method === 'POST' ? 'text-emerald-400' :
                           event.method === 'GET' ? 'text-blue-400' :
@@ -335,13 +335,13 @@ setLoading(true)
                           {event.method}
                         </span>
                       </td>
-                      <td className="px-4 py-3 text-sm max-w-md truncate font-mono">
+                      <td className="px-3 py-2.5 text-xs max-w-[200px] truncate font-mono">
                         {event.url}
                       </td>
-                      <td className="px-4 py-3 text-sm text-muted-foreground">
+                      <td className="px-3 py-2.5 text-xs text-muted-foreground whitespace-nowrap">
                         {new Date(event.created_at).toLocaleString()}
                       </td>
-                    </tr>
+</tr>
                   ))}
                 </tbody>
               </table>

@@ -171,3 +171,34 @@
 .custom-scrollbar::-webkit-scrollbar-thumb:hover {
   background: #3f3f46;
 }
+
+/* Landing page responsive utilities */
+@media (max-width: 767px) {
+  .landing-hero-pt { padding-top: 100px !important; padding-bottom: 60px !important; }
+  .landing-hero-subtitle { font-size: 16px !important; max-width: 320px !important; }
+  .landing-cta-row { flex-direction: column; gap: 12px !important; }
+  .landing-cta-row button { width: 100%; justify-content: center; }
+  .landing-features-grid { grid-template-columns: 1fr !important; }
+  .landing-integration-grid { grid-template-columns: 1fr !important; }
+  .landing-section-py { padding-top: 60px !important; padding-bottom: 60px !important; }
+  .landing-nav { padding: 0 16px !important; }
+  .landing-nav-h { height: 56px !important; }
+  .landing-provider-gap { gap: 16px 20px !important; }
+  .landing-features-card-p { padding: 28px 24px !important; }
+  .landing-integration-grid-gap { gap: 32px !important; }
+}
+
+@media (min-width: 1024px) {
+  .landing-features-grid { grid-template-columns: repeat(3, 1fr) !important; }
+  .landing-integration-grid { grid-template-columns: repeat(2, 1fr) !important; }
+}
+
+@media (min-width: 768px) and (max-width: 1023px) {
+  .landing-features-grid { grid-template-columns: repeat(2, 1fr) !important; }
+}
+
+.code-block { font-size: 11px !important; line-height: 1.6 !important; }
+
+@media (max-width: 767px) {
+  .code-block { font-size: 10px !important; line-height: 1.5 !important; }
+}
