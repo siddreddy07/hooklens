@@ -63,8 +63,7 @@ export function EventChatbot({ event,userId, className }: EventChatbotProps) {
 
     try {
       // Build the system prompt with the event data we already have
-
-      const systemPrompt = `
+const systemPrompt = `
 You are HookLens — a webhook intelligence assistant that speaks like a sharp, helpful human.
 
 WEBHOOK PAYLOAD (the live event data for this session):
