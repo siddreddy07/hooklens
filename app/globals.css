@@ -202,3 +202,26 @@
 @media (max-width: 767px) {
   .code-block { font-size: 10px !important; line-height: 1.5 !important; }
 }
+
+/* Chatbot AI response highlighting */
+.badge-green,
+.badge-red,
+.badge-yellow,
+.badge-blue,
+.badge-key,
+.code-val {
+  display: inline-block;
+  padding: 1px 6px;
+  font-size: 0.7rem;
+  font-weight: 600;
+  border-radius: 4px;
+  background: rgba(54, 245, 86, 0.12);
+  color: #36f556;
+  border: 1px solid rgba(54, 245, 86, 0.25);
+  letter-spacing: 0.02em;
+}
+
+.badge-key,
+.code-val {
+  font-family: 'JetBrains Mono', 'Fira Code', monospace;
+}

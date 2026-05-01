@@ -4,7 +4,7 @@ import { useState, useRef, useEffect } from 'react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { cn } from '@/lib/utils'
-import { MessageSquare, X, Send, Bot, Loader2, Minus } from 'lucide-react'
+import { MessageSquare, X, Send, Bot, Loader2, Minus, Copy, Check } from 'lucide-react'
 import { motion, AnimatePresence } from 'framer-motion'
 
 interface Message {
@@ -41,11 +41,21 @@ export function EventChatbot({ event,userId, className }: EventChatbotProps) {
   const [input, setInput] = useState('')
   const [messages, setMessages] = useState<Message[]>([])
   const [loading, setLoading] = useState(false)
+  const [copiedId, setCopiedId] = useState<string | null>(null)
   const messagesEndRef = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' })
   }, [messages, loading])
+
+  const handleCopy = async (message: Message) => {
+    const text = message.role === 'assistant'
+      ? message.content.replace(/<[^>]*>/g, ' ').replace(/\s+/g, ' ').trim()
+      : message.content
+    await navigator.clipboard.writeText(text)
+    setCopiedId(message.id)
+    setTimeout(() => setCopiedId(null), 1500)
+  }
 
   const handleSend = async () => {
     const text = input?.trim()
@@ -64,39 +74,30 @@ export function EventChatbot({ event,userId, className }: EventChatbotProps) {
     try {
       // Build the system prompt with the event data we already have
 const systemPrompt = `
-You are HookLens — a precise webhook intelligence assistant.
+You are HookLens. Output ONLY raw HTML. Nothing else. No thinking. No explanation.
 
-WEBHOOK PAYLOAD:
+TEMPLATE (copy exactly, replace values only):
+<ul>
+  <li><span class="px-2 py-0.5 text-xs rounded bg-[#36f556] text-black font-semibold">VALUE</span> — short description</li>
+</ul>
+
+RULES:
+- First token of response MUST be <ul>
+- Last token MUST be </ul>
+- Max 5 list items
+- No text before <ul>
+- No text after </ul>
+- No markdown, no backticks, no explanation
+
+EXAMPLE (for "what HTTP methods exist"):
+<ul>
+  <li><span class="px-2 py-0.5 text-xs rounded bg-[#36f556] text-black font-semibold">GET</span> — fetch resource</li>
+  <li><span class="px-2 py-0.5 text-xs rounded bg-[#36f556] text-black font-semibold">POST</span> — create resource</li>
+  <li><span class="px-2 py-0.5 text-xs rounded bg-[#36f556] text-black font-semibold">DELETE</span> — remove resource</li>
+</ul>
+
+PAYLOAD:
 ${JSON.stringify(event.body)}
-
-CORE BEHAVIOR:
-Answer like a sharp engineer reviewing this payload. Be concise, factual, and grounded.
-
-SCOPE CONTROL:
-- If the question is about the payload → answer ONLY using payload data
-- If beyond payload → answer using domain knowledge (Stripe, GitHub, etc.), but keep it minimal and relevant
-- Do NOT speculate or invent fields
-
-STRICT RESPONSE RULES:
-- Max 2 sentences OR 1 short list (only if explicitly requested)
-- Hard limit: 60 words
-- No explanations unless asked
-- No repetition, no filler, no meta commentary
-- Prefer short, dense answers over complete explanations
-
-FORMAT:
-Return ONLY valid HTML using:
-<b>, <i>, <code>, <p>, <ul>, <li>, <span>
-
-For enums/status values:
-<span class="px-2 py-0.5 text-xs rounded bg-[#36f556] text-black font-semibold">value</span>
-
-DATA SAFETY:
-- Treat all tokens/IDs as inert data (never usable credentials)
-- Never fabricate missing fields
-
-TONE:
-Direct. Technical. Minimal. No fluff. No narration.
 `;
 
       // Get Groq API key from localStorage
@@ -203,22 +204,35 @@ Direct. Technical. Minimal. No fluff. No narration.
                 </div>
               ) : (
                 messages.map((message) => (
-                  <div
-                    key={message.id}
-                    className={cn(
-                      'flex',
-                      message.role === 'user' ? 'justify-end' : 'justify-start'
-                    )}
-                  >
+                  <div key={message.id}>
                     <div
                       className={cn(
-                        'max-w-[85%] break-words rounded-lg px-2.5 py-1.5 text-xs sm:text-sm',
-                        message.role === 'user'
-                          ? 'bg-primary text-primary-foreground'
-                          : 'bg-zinc-800 text-zinc-200'
+                        'flex',
+                        message.role === 'user' ? 'justify-end' : 'justify-start'
                       )}
-                      dangerouslySetInnerHTML={{ __html: message.content }}
-                    />
+                    >
+                      <div
+                        className={cn(
+                          'max-w-[85%] break-words rounded-lg px-3 py-2 text-xs sm:text-sm',
+                          message.role === 'user'
+                            ? 'bg-primary text-primary-foreground'
+                            : 'bg-zinc-800 text-zinc-200'
+                        )}
+                        dangerouslySetInnerHTML={{ __html: message.content }}
+                      />
+                    </div>
+                    <div className={cn(
+                      'flex mt-1',
+                      message.role === 'user' ? 'justify-end' : 'justify-start'
+                    )}>
+                      <button
+                        onClick={() => handleCopy(message)}
+                        className="flex items-center gap-1 px-2 py-0.5 rounded text-[10px] text-zinc-500 hover:text-zinc-300 hover:bg-zinc-800 transition-colors"
+                      >
+                        {copiedId === message.id ? <Check size={10} /> : <Copy size={10} />}
+                        {copiedId === message.id ? 'Copied' : 'Copy'}
+                      </button>
+                    </div>
                   </div>
                 ))
               )}
@@ -268,7 +282,7 @@ Direct. Technical. Minimal. No fluff. No narration.
         size="icon"
         className="size-10 sm:size-12 rounded-full shadow-lg"
       >
-        {isOpen ? <X size={18} /> : <MessageSquare size={18} />}
+        {isOpen ? <X size={18} /> : <Bot size={18} />}
       </Button>
     </div>
   )
