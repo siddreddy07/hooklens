@@ -5,7 +5,7 @@ import { createClient as createSupabaseClient } from '@supabase/supabase-js'
 export const maxDuration = 60
 
 const GLOBAL_GROQ_API_KEY = process.env.GROQ_API_KEY
-const MAX_FREE_USAGE = 10
+const MAX_FREE_USAGE = 25
 
 export async function POST(req: Request) {
   let body: { messages: Array<{ role: string; content: string }>; systemPrompt: string; groqApiKey?: string; userId?: string }
